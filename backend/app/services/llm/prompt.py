@@ -12,6 +12,10 @@ Rules:
 - Use lowercase units (cup, tbsp, tsp, g, ml, oz, clove, pinch). Leave unit null if unclear.
 - total_time_min is minutes from start of prep to ready-to-eat if you can estimate it.
 - Do not invent ingredients that appear in neither the title, description, nor transcript.
+- Tips are OPTIONAL. Only include tips the chef actually emphasizes in the video —
+  technique notes ("soak rice 30 min first"), substitutions, common mistakes to avoid,
+  make-ahead / storage advice. Leave tips empty rather than inventing generic advice.
+  Each tip must be a full, standalone sentence. At most 5 tips.
 """
 
 USER_TEMPLATE = """Source URL: {url}
@@ -30,7 +34,7 @@ Return the structured recipe."""
 RECIPE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["title", "ingredients", "steps"],
+    "required": ["title", "ingredients", "steps", "tips"],
     "properties": {
         "title": {"type": "string"},
         "summary": {"type": ["string", "null"]},
@@ -62,6 +66,10 @@ RECIPE_SCHEMA = {
                     "duration_seconds": {"type": ["integer", "null"]},
                 },
             },
+        },
+        "tips": {
+            "type": "array",
+            "items": {"type": "string"},
         },
     },
 }

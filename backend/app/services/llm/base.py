@@ -24,6 +24,7 @@ class StructuredRecipe(BaseModel):
     cuisine: str | None = None
     ingredients: list[Ingredient]
     steps: list[Step]
+    tips: list[str] = []
 
 
 @dataclass

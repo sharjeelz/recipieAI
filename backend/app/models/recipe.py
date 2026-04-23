@@ -41,6 +41,7 @@ class Recipe(Base):
     visibility: Mapped[Visibility] = mapped_column(
         Enum(Visibility, name="visibility"), default=Visibility.private, nullable=False
     )
+    tips: Mapped[list[str] | None] = mapped_column(JSON)
     llm_provider: Mapped[str | None] = mapped_column(String(50))
     llm_model: Mapped[str | None] = mapped_column(String(100))
     llm_input_tokens: Mapped[int | None] = mapped_column(Integer)

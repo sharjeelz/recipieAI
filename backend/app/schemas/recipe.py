@@ -44,6 +44,7 @@ class RecipeOut(BaseModel):
     cost_usd: float | None = None
     ingredients: list[IngredientOut]
     steps: list[StepOut]
+    tips: list[str] | None = None
     available_translations: list[str] = []
     created_at: datetime
     updated_at: datetime
@@ -107,6 +108,7 @@ class TranslationOut(BaseModel):
     cuisine: str | None = None
     ingredients: list[IngredientOut]
     steps: list[StepOut]
+    tips: list[str] | None = None
     cost_usd: float | None = None
 
 

@@ -178,6 +178,7 @@ async def translate_recipe_endpoint(
         steps=[
             LlmStep(text=s.text, duration_seconds=s.duration_seconds) for s in recipe.steps
         ],
+        tips=recipe.tips or [],
     )
     result = await translator_mod.translate_recipe(source, body.language, settings)
     cost = round(llm_cost_usd(result.model, result.input_tokens, result.output_tokens), 6)
@@ -226,6 +227,7 @@ def _translation_to_out(row: RecipeTranslation) -> TranslationOut:
             }
             for i, s in enumerate(steps)
         ],
+        tips=payload.get("tips") or None,
         cost_usd=row.cost_usd,
     )
 

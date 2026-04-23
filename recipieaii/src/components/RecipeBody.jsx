@@ -58,6 +58,20 @@ export default function RecipeBody({ recipe }) {
           ))}
         </ol>
       </section>
+
+      {recipe.tips && recipe.tips.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold mb-3">💡 Tips</h2>
+          <ul className="space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
+            {recipe.tips.map((tip, i) => (
+              <li key={i} className="text-amber-900 flex gap-2">
+                <span className="text-amber-600 flex-shrink-0">•</span>
+                <span className="flex-1">{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }
