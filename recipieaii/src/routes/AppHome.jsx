@@ -34,17 +34,17 @@ export default function AppHome() {
     <div className="space-y-8">
       <section>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Paste a YouTube cooking video
+          Paste a cooking video link
         </h1>
         <p className="text-gray-600 mt-1">
-          We'll turn it into a structured recipe you can save and share.
+          YouTube, TikTok, or Instagram Reels — we'll turn it into a structured recipe.
         </p>
         <form onSubmit={onSubmit} className="mt-5 space-y-3">
           {err && <Alert>{err}</Alert>}
           <Input
             type="url"
             required
-            placeholder="https://youtube.com/watch?v=…"
+            placeholder="https://youtube.com/watch?v=…  or  tiktok.com/@chef/video/…"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             disabled={busy}

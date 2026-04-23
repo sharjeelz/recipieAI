@@ -8,6 +8,7 @@ import AppHome from './routes/AppHome'
 import Library from './routes/Library'
 import JobStatus from './routes/JobStatus'
 import RecipeView from './routes/RecipeView'
+import CookMode from './routes/CookMode'
 import ShoppingList from './routes/ShoppingList'
 import Share from './routes/Share'
 import NotFound from './routes/NotFound'
@@ -19,6 +20,15 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/s/:token" element={<Share />} />
+
+      <Route
+        path="/cook/:recipeId"
+        element={
+          <RequireAuth>
+            <CookMode />
+          </RequireAuth>
+        }
+      />
 
       <Route
         path="/app"

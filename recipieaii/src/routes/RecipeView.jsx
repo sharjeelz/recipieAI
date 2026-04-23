@@ -120,6 +120,9 @@ export default function RecipeView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
+        <Button onClick={() => navigate(`/cook/${recipeId}`)} disabled={busy}>
+          👩‍🍳 Start cooking
+        </Button>
         <Button variant="secondary" onClick={onAddToShoppingList} disabled={busy}>
           🛒 Add to shopping list
         </Button>

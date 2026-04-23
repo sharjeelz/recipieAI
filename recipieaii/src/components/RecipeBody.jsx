@@ -1,4 +1,12 @@
+import { useState } from 'react'
+import { scaleQuantity } from '../lib/quantity'
+
 export default function RecipeBody({ recipe }) {
+  const baseServings = recipe.servings || null
+  const [servings, setServings] = useState(baseServings)
+  const scale = baseServings && servings ? servings / baseServings : 1
+  const scaled = scale !== 1
+
   return (
     <div className="space-y-8">
       <header>
@@ -29,12 +37,23 @@ export default function RecipeBody({ recipe }) {
       </header>
 
       <section>
-        <h2 className="text-xl font-semibold mb-3">Ingredients</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+          <h2 className="text-xl font-semibold">Ingredients</h2>
+          {baseServings != null && (
+            <ServingsScaler
+              base={baseServings}
+              value={servings}
+              onChange={setServings}
+            />
+          )}
+        </div>
         <ul className="space-y-1.5">
           {recipe.ingredients.map((ing) => (
             <li key={`${ing.position}-${ing.item}`} className="flex gap-3">
               <span className="text-gray-900 min-w-[80px] tabular-nums">
-                {[ing.quantity, ing.unit].filter(Boolean).join(' ') || ''}
+                {[scaled ? scaleQuantity(ing.quantity, scale) : ing.quantity, ing.unit]
+                  .filter(Boolean)
+                  .join(' ') || ''}
               </span>
               <span className="text-gray-800 flex-1">
                 {ing.item}
@@ -71,6 +90,40 @@ export default function RecipeBody({ recipe }) {
             ))}
           </ul>
         </section>
+      )}
+    </div>
+  )
+}
+
+function ServingsScaler({ base, value, onChange }) {
+  return (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-gray-500">Servings</span>
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(1, value - 1))}
+        className="w-8 h-8 rounded-full border border-gray-300 hover:border-emerald-500 flex items-center justify-center"
+        aria-label="Decrease servings"
+      >
+        −
+      </button>
+      <span className="min-w-[2ch] text-center font-semibold text-gray-900">{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(value + 1)}
+        className="w-8 h-8 rounded-full border border-gray-300 hover:border-emerald-500 flex items-center justify-center"
+        aria-label="Increase servings"
+      >
+        +
+      </button>
+      {value !== base && (
+        <button
+          type="button"
+          onClick={() => onChange(base)}
+          className="text-xs text-emerald-700 hover:underline ml-1"
+        >
+          Reset
+        </button>
       )}
     </div>
   )
