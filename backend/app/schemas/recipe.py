@@ -44,6 +44,7 @@ class RecipeOut(BaseModel):
     cost_usd: float | None = None
     ingredients: list[IngredientOut]
     steps: list[StepOut]
+    available_translations: list[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -91,6 +92,22 @@ class JobOut(BaseModel):
 
 class CreateRecipeOut(BaseModel):
     job_id: uuid.UUID
+
+
+class TranslateIn(BaseModel):
+    language: str = Field(min_length=2, max_length=5)
+
+
+class TranslationOut(BaseModel):
+    language: str
+    title: str
+    summary: str | None = None
+    servings: int | None = None
+    total_time_min: int | None = None
+    cuisine: str | None = None
+    ingredients: list[IngredientOut]
+    steps: list[StepOut]
+    cost_usd: float | None = None
 
 
 class ShareOut(BaseModel):
