@@ -29,6 +29,9 @@ export default function AppShell() {
             <NavLink to="/app/library" className={linkClass}>
               Library
             </NavLink>
+            <NavLink to="/app/shopping-list" className={linkClass}>
+              Shopping
+            </NavLink>
             <button
               onClick={handleLogout}
               className="ml-2 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100"

@@ -21,6 +21,7 @@ export default function RecipeView() {
   const [lang, setLang] = useState('en')
   const [translations, setTranslations] = useState({})
   const [translating, setTranslating] = useState(false)
+  const [shopStatus, setShopStatus] = useState(null)
 
   useEffect(() => {
     api.get(`/recipes/${recipeId}`).then(setRecipe).catch((e) => setErr(e.message))
@@ -73,6 +74,24 @@ export default function RecipeView() {
     }
   }
 
+  async function onAddToShoppingList() {
+    setBusy(true)
+    setShopStatus(null)
+    try {
+      const r = await api.post(`/shopping-list/from-recipe/${recipeId}`)
+      const msg =
+        r.added === 0
+          ? 'All ingredients already on your list.'
+          : `Added ${r.added} item${r.added === 1 ? '' : 's'}` +
+            (r.skipped ? ` · ${r.skipped} already on list` : '')
+      setShopStatus(msg)
+    } catch (e) {
+      setErr(e.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function onChangeLanguage(code) {
     if (code === lang) return
     if (code === 'en' || translations[code]) {
@@ -101,6 +120,9 @@ export default function RecipeView() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap gap-2">
+        <Button variant="secondary" onClick={onAddToShoppingList} disabled={busy}>
+          🛒 Add to shopping list
+        </Button>
         <Button variant="secondary" onClick={onShare} disabled={busy}>
           🔗 Share
         </Button>
@@ -132,6 +154,12 @@ export default function RecipeView() {
         ))}
         {translating && <Spinner label="Translating…" />}
       </div>
+
+      {shopStatus && (
+        <Card className="bg-emerald-50 border-emerald-200">
+          <p className="text-sm text-emerald-900">{shopStatus}</p>
+        </Card>
+      )}
 
       {shareUrl && (
         <Card className="bg-emerald-50 border-emerald-200">
