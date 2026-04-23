@@ -94,7 +94,7 @@ async def client(monkeypatch) -> AsyncIterator[AsyncClient]:
         "app.services.recipe_builder.get_llm_provider", lambda settings: FakeProvider()
     )
     monkeypatch.setattr(
-        "app.services.recipe_builder.classify_recipe", fake_classify
+        "app.services.transcript.pipeline.classify_recipe", fake_classify
     )
 
     async def override_get_db():
