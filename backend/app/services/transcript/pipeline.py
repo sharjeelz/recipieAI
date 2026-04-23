@@ -14,8 +14,19 @@ TranscriptSource = Literal["captions", "description", "whisper"]
 MIN_DESCRIPTION_CHARS = 200
 
 # Whisper output shorter than this is treated as failed transcription (silent /
-# music-only video) — prevents hallucinated recipes from empty audio.
-MIN_WHISPER_CHARS = 100
+# music-only video) — prevents hallucinated recipes from empty audio. Set low
+# enough to let short TikToks through (15–30s clips can produce ~40 chars).
+MIN_WHISPER_CHARS = 40
+
+
+def _for_classifier(text: str, title: str | None) -> str:
+    """Prepend the video title when classifying a candidate source. Gives the
+    classifier context — e.g. a TikTok description of '#chicken #garlic' is
+    ambiguous alone but obviously a recipe when paired with title 'Creamy
+    Tuscan Chicken Recipe'."""
+    if title:
+        return f"Video title: {title}\n\nContent:\n{text}"
+    return text
 
 
 @dataclass
@@ -58,7 +69,7 @@ async def get_transcript(video_url: str, settings: Settings) -> TranscriptResult
 
     async def _try(text: str) -> ClassifyResult:
         nonlocal classify_in, classify_out, classify_model, last
-        c = await classify_recipe(text, settings)
+        c = await classify_recipe(_for_classifier(text, meta.title), settings)
         classify_in += c.input_tokens
         classify_out += c.output_tokens
         classify_model = c.model
