@@ -1,12 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { Alert, Button, Spinner } from '../components/ui'
+import {
+  COUNTRY_LABELS,
+  detectCountry,
+  getKnownCountries,
+  getRetailers,
+  setCountryOverride,
+} from '../lib/retailers'
 
 export default function ShoppingList() {
   const [items, setItems] = useState(null)
   const [err, setErr] = useState(null)
   const [newItem, setNewItem] = useState('')
   const [busy, setBusy] = useState(false)
+  const [country, setCountry] = useState(detectCountry)
+
+  function changeCountry(code) {
+    setCountryOverride(code)
+    setCountry(code)
+  }
 
   useEffect(() => {
     load()
@@ -64,6 +77,21 @@ export default function ShoppingList() {
     }
   }
 
+  async function onRename(it, newText) {
+    const trimmed = newText.trim()
+    if (!trimmed || trimmed === it.item) return // no-op
+    // Optimistic update
+    setItems((prev) =>
+      prev.map((x) => (x.id === it.id ? { ...x, item: trimmed } : x)),
+    )
+    try {
+      await api.patch(`/shopping-list/${it.id}`, { item: trimmed })
+    } catch (e) {
+      setErr(e.message)
+      load() // re-pull truth
+    }
+  }
+
   async function onClearChecked() {
     if (!confirm('Remove all checked items?')) return
     try {
@@ -106,11 +134,14 @@ export default function ShoppingList() {
           </span>{' '}
           list
         </h1>
-        <p className="font-display italic text-ink-soft text-lg mt-3">
-          {items.length === 0
-            ? 'A blank slip of paper. Add your first item below.'
-            : `${unchecked.length} to gather · ${checked.length} in the basket`}
-        </p>
+        <div className="flex flex-wrap items-center gap-3 mt-3">
+          <p className="font-display italic text-ink-soft text-lg">
+            {items.length === 0
+              ? 'A blank slip of paper. Add your first item below.'
+              : `${unchecked.length} to gather · ${checked.length} in the basket`}
+          </p>
+          <CountryPicker country={country} onChange={changeCountry} />
+        </div>
       </header>
 
       {/* Add form */}
@@ -142,7 +173,14 @@ export default function ShoppingList() {
           <p className="eyebrow mb-4">To gather</p>
           <ul className="border-t border-rule">
             {unchecked.map((it) => (
-              <Row key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
+              <Row
+                key={it.id}
+                item={it}
+                country={country}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                onRename={onRename}
+              />
             ))}
           </ul>
         </section>
@@ -156,8 +194,10 @@ export default function ShoppingList() {
               <Row
                 key={it.id}
                 item={it}
+                country={country}
                 onToggle={onToggle}
                 onDelete={onDelete}
+                onRename={onRename}
                 muted
               />
             ))}
@@ -187,15 +227,42 @@ export default function ShoppingList() {
   )
 }
 
-function Row({ item, onToggle, onDelete, muted }) {
+function Row({ item, country, onToggle, onDelete, onRename, muted }) {
   const isChecked = !!item.checked_at
-  const buyUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
-    item.item,
-  )}`
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(item.item)
+  const inputRef = useRef(null)
+
+  // Keep local draft in sync if the underlying item changes (e.g. after a rename round-trip)
+  useEffect(() => {
+    if (!editing) setDraft(item.item)
+  }, [item.item, editing])
+
+  function startEdit() {
+    if (isChecked) return
+    setDraft(item.item)
+    setEditing(true)
+    // focus + select on next tick so the input has rendered
+    setTimeout(() => {
+      inputRef.current?.focus()
+      inputRef.current?.select()
+    }, 0)
+  }
+
+  function commit() {
+    setEditing(false)
+    onRename(item, draft)
+  }
+
+  function cancel() {
+    setEditing(false)
+    setDraft(item.item)
+  }
+
   return (
     <li
       className={
-        'group flex items-center gap-4 sm:gap-5 py-4 border-b transition-opacity ' +
+        'group flex items-center gap-3 sm:gap-5 py-4 border-b transition-opacity ' +
         (muted ? 'border-rule-soft opacity-60' : 'border-rule')
       }
     >
@@ -211,27 +278,43 @@ function Row({ item, onToggle, onDelete, muted }) {
       >
         {isChecked && <span className="text-xs leading-none">✓</span>}
       </button>
-      <span
-        className={
-          'flex-1 font-display text-lg ' +
-          (isChecked ? 'line-through text-ink-muted' : 'text-ink')
-        }
-      >
-        {item.item}
-      </span>
-      {!isChecked && (
-        <a
-          href={buyUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Find ${item.item} online`}
-          title="Find this online"
-          className="shrink-0 inline-flex items-center gap-1.5 text-[11px] tracking-widest uppercase text-ink-muted hover:text-terracotta transition-colors px-2.5 py-1.5 rounded-full border border-rule hover:border-terracotta"
+
+      {editing ? (
+        <input
+          ref={inputRef}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              commit()
+            } else if (e.key === 'Escape') {
+              e.preventDefault()
+              cancel()
+            }
+          }}
+          maxLength={255}
+          className="flex-1 min-w-0 bg-transparent border-0 border-b border-ink/40 px-0 py-1 font-display text-lg text-ink focus:outline-none focus:border-ink"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={startEdit}
+          disabled={isChecked}
+          className={
+            'flex-1 min-w-0 text-left font-display text-lg truncate transition-colors ' +
+            (isChecked
+              ? 'line-through text-ink-muted cursor-default'
+              : 'text-ink hover:text-terracotta cursor-text')
+          }
+          title={isChecked ? '' : 'Tap to rename'}
         >
-          <span aria-hidden="true">🔍</span>
-          <span className="hidden sm:inline">Find</span>
-        </a>
+          {item.item}
+        </button>
       )}
+
+      {!isChecked && !editing && <FindMenu item={item} country={country} />}
       <button
         onClick={() => onDelete(item)}
         className="shrink-0 text-base text-ink-muted hover:text-tomato transition-colors px-2 leading-none"
@@ -240,5 +323,186 @@ function Row({ item, onToggle, onDelete, muted }) {
         ✕
       </button>
     </li>
+  )
+}
+
+/**
+ * FindMenu — small popover next to each item that lists retailers for
+ * the user's detected country. Click any retailer to open its search
+ * for this item in a new tab.
+ */
+function FindMenu({ item, country }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const retailers = getRetailers(country)
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e) {
+      if (!ref.current?.contains(e.target)) setOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label={`Find ${item.item} online`}
+        aria-expanded={open}
+        title="Find this online"
+        className={
+          'inline-flex items-center gap-1.5 text-[11px] tracking-widest uppercase transition-colors px-2.5 py-1.5 rounded-full border ' +
+          (open
+            ? 'text-terracotta border-terracotta bg-terracotta-soft'
+            : 'text-ink-muted border-rule hover:text-terracotta hover:border-terracotta')
+        }
+      >
+        <span aria-hidden="true">🔍</span>
+        <span className="hidden sm:inline">Find</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 z-30 min-w-[220px] rounded-2xl border border-rule bg-paper-soft shadow-[0_8px_28px_-8px_rgba(28,24,21,0.25)] overflow-hidden"
+        >
+          <div className="px-4 py-2.5 border-b border-rule-soft">
+            <p className="eyebrow text-ink-muted">Buy from</p>
+            <p className="font-display italic text-sm text-ink mt-0.5 truncate">
+              {item.item}
+            </p>
+          </div>
+          <ul className="py-1">
+            {retailers.map((r) => (
+              <li key={r.id}>
+                <a
+                  href={r.url(item.item)}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={() => setOpen(false)}
+                  role="menuitem"
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-ink hover:bg-paper-deep transition-colors"
+                >
+                  <span className="font-display">{r.name}</span>
+                  <span aria-hidden="true" className="text-ink-muted text-xs">
+                    ↗
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ul>
+          <div className="px-4 py-2 border-t border-rule-soft text-[10px] tracking-widest uppercase text-ink-muted">
+            {COUNTRY_LABELS[country] || COUNTRY_LABELS.DEFAULT}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * CountryPicker — sits in the page header. Lets the user pick which
+ * country's retailers to show in the Find menu. Persisted to localStorage.
+ */
+function CountryPicker({ country, onChange }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+  const known = ['DEFAULT', ...getKnownCountries()]
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e) {
+      if (!ref.current?.contains(e.target)) setOpen(false)
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        title="Change region for the Find menu"
+        className={
+          'inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-sm transition-colors ' +
+          (open
+            ? 'border-terracotta bg-terracotta-soft text-terracotta-deep'
+            : 'border-ink/15 bg-paper-soft text-ink hover:border-ink hover:bg-paper-deep')
+        }
+      >
+        <span className="text-ink-muted text-[11px] tracking-widest uppercase">
+          stores in
+        </span>
+        <span className="font-display">
+          {COUNTRY_LABELS[country] || COUNTRY_LABELS.DEFAULT}
+        </span>
+        <span aria-hidden="true" className="text-[10px] text-ink-muted">▼</span>
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute left-0 sm:right-0 sm:left-auto top-full mt-2 z-30 min-w-[240px] rounded-2xl border border-rule bg-paper-soft shadow-[0_8px_28px_-8px_rgba(28,24,21,0.25)] overflow-hidden"
+        >
+          <div className="px-4 py-2.5 border-b border-rule-soft">
+            <p className="eyebrow text-ink-muted">Region</p>
+            <p className="text-[11px] text-ink-soft mt-0.5">
+              Which country's stores to show
+            </p>
+          </div>
+          <ul className="py-1 max-h-[320px] overflow-y-auto">
+            {known.map((code) => {
+              const active = code === country
+              return (
+                <li key={code}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      onChange(code)
+                      setOpen(false)
+                    }}
+                    className={
+                      'w-full flex items-center justify-between gap-3 px-4 py-2.5 text-sm transition-colors ' +
+                      (active
+                        ? 'text-terracotta bg-terracotta-soft/40'
+                        : 'text-ink hover:bg-paper-deep')
+                    }
+                  >
+                    <span className="font-display">
+                      {COUNTRY_LABELS[code]}
+                    </span>
+                    {active && (
+                      <span aria-hidden="true" className="text-xs">
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   )
 }

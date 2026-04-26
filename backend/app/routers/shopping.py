@@ -12,7 +12,7 @@ from app.schemas.shopping import (
     AddItemIn,
     AddRecipeOut,
     ShoppingItemOut,
-    ToggleItemIn,
+    UpdateItemIn,
 )
 
 router = APIRouter()
@@ -115,8 +115,8 @@ async def add_from_recipe(
 
 
 @router.patch("/{item_id}", response_model=ShoppingItemOut)
-async def toggle_item(
-    item_id: uuid.UUID, body: ToggleItemIn, user: CurrentUser, db: DbSession
+async def update_item(
+    item_id: uuid.UUID, body: UpdateItemIn, user: CurrentUser, db: DbSession
 ) -> ShoppingListItem:
     row = (
         await db.execute(
@@ -127,7 +127,35 @@ async def toggle_item(
     ).scalar_one_or_none()
     if row is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "item not found")
-    row.checked_at = datetime.now(timezone.utc) if body.checked else None
+
+    if body.item is not None:
+        new_text = body.item.strip()
+        if not new_text:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "item cannot be empty")
+        new_norm = normalize(new_text)
+        if new_norm != row.item_normalized:
+            # guard against the unique (user_id, item_normalized) constraint —
+            # if the user is renaming to something already on their list,
+            # surface a friendly 409 instead of a raw IntegrityError.
+            clash = (
+                await db.execute(
+                    select(ShoppingListItem).where(
+                        ShoppingListItem.user_id == user.id,
+                        ShoppingListItem.item_normalized == new_norm,
+                        ShoppingListItem.id != item_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if clash is not None:
+                raise HTTPException(
+                    status.HTTP_409_CONFLICT, "already on your list"
+                )
+            row.item = new_text
+            row.item_normalized = new_norm
+
+    if body.checked is not None:
+        row.checked_at = datetime.now(timezone.utc) if body.checked else None
+
     await db.commit()
     await db.refresh(row)
     return row

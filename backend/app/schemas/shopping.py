@@ -19,8 +19,15 @@ class AddItemIn(BaseModel):
     item: str = Field(min_length=1, max_length=255)
 
 
-class ToggleItemIn(BaseModel):
-    checked: bool
+class UpdateItemIn(BaseModel):
+    """PATCH body for a shopping list item. Either or both fields may be set."""
+
+    checked: bool | None = None
+    item: str | None = Field(default=None, min_length=1, max_length=255)
+
+
+# kept as an alias so any old import sites still work
+ToggleItemIn = UpdateItemIn
 
 
 class AddRecipeOut(BaseModel):
