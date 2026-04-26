@@ -259,3 +259,71 @@ input:-webkit-autofill:focus {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/* ──────────────────────────────────────────────────────────
+   Print: turn the recipe page into a clean editorial spread.
+   We hide app chrome (nav, footer, buttons, buddy, music) and
+   surface only the recipe body in serif type on white paper.
+   ────────────────────────────────────────────────────────── */
+@media print {
+  /* white paper, no grain, no shadows */
+  body {
+    background: #ffffff !important;
+    color: #1c1815 !important;
+    padding: 0 !important;
+  }
+  body::before { display: none !important; }
+
+  @page {
+    size: auto;
+    margin: 0.75in 0.7in 0.85in 0.7in;
+  }
+
+  /* opt-in / opt-out helpers used by the components */
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+
+  /* lift any sticky chrome out of the flow */
+  header, footer, nav, aside { break-inside: avoid; }
+
+  /* widen the recipe body across the page for print */
+  .max-w-5xl, .max-w-4xl, .max-w-3xl, .max-w-2xl, .max-w-7xl {
+    max-width: 100% !important;
+  }
+
+  /* remove decorative backgrounds and force ink-on-paper */
+  [class*="bg-paper-soft"],
+  [class*="bg-paper-deep"],
+  [class*="bg-saffron-soft"],
+  [class*="bg-sage-soft"],
+  [class*="bg-terracotta-soft"] {
+    background: transparent !important;
+    border-color: #d9cfb9 !important;
+  }
+  [class*="shadow-"] { box-shadow: none !important; }
+
+  /* avoid awkward breaks inside sections */
+  h1, h2, h3 { break-after: avoid-page; }
+  ol > li, ul > li { break-inside: avoid; }
+  section, article { break-inside: avoid-page; }
+
+  /* keep links clearly URL-ed when printed */
+  a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: #877e72;
+    word-break: break-all;
+  }
+  /* but don't repeat short routes like /app/recipes/... */
+  a[href^="/"]::after { content: ""; }
+
+  /* hide all the buddy / music / animated bits */
+  [aria-label="Poke the cooking buddy"],
+  [aria-label*="music"],
+  [aria-label*="Music"] {
+    display: none !important;
+  }
+}
+
+/* hide print-only elements on screen by default */
+.print-only { display: none; }

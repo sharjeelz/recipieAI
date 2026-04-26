@@ -119,8 +119,29 @@ export default function RecipeView() {
 
   return (
     <div className="space-y-10">
-      {/* Floating action bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rise">
+      {/* Print-only masthead — appears at the top of the printed page */}
+      <div className="print-only" style={{ marginBottom: '1.25rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            borderBottom: '1px solid #1c1815',
+            paddingBottom: '0.5rem',
+            fontFamily: 'var(--font-display)',
+          }}
+        >
+          <span style={{ fontStyle: 'italic', fontSize: '0.95rem' }}>
+            From the kitchen of RecipyAI
+          </span>
+          <span style={{ fontSize: '0.8rem', color: '#877e72' }}>
+            Printed {new Date().toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+
+      {/* Floating action bar — hidden on print */}
+      <div className="no-print flex flex-wrap items-center justify-between gap-3 rise">
         <button
           onClick={() => navigate(-1)}
           className="link-grow text-sm text-ink-muted tracking-wide"
@@ -143,6 +164,13 @@ export default function RecipeView() {
             disabled={busy}
           >
             + Market list
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => window.print()}
+          >
+            🖨 Print
           </Button>
           <Button
             variant="ghost"
@@ -171,14 +199,14 @@ export default function RecipeView() {
 
       {/* Inline status banners */}
       {shopStatus && (
-        <div className="rounded-2xl bg-sage-soft border border-sage/20 px-5 py-3 text-sm text-[#3a4a2c] flex items-center gap-3">
+        <div className="no-print rounded-2xl bg-sage-soft border border-sage/20 px-5 py-3 text-sm text-[#3a4a2c] flex items-center gap-3">
           <span className="font-display italic">✓</span>
           {shopStatus}
         </div>
       )}
 
       {shareUrl && (
-        <div className="rounded-2xl bg-saffron-soft border border-saffron/30 px-5 py-4">
+        <div className="no-print rounded-2xl bg-saffron-soft border border-saffron/30 px-5 py-4">
           <p className="eyebrow mb-1 text-[#7a5612]">Share link</p>
           <code className="text-xs sm:text-sm break-all text-ink-soft tracking-tight">
             {shareUrl}
@@ -187,7 +215,7 @@ export default function RecipeView() {
       )}
 
       {/* Language switcher — magazine style */}
-      <div className="flex flex-wrap items-center gap-4 border-t border-b border-rule py-3">
+      <div className="no-print flex flex-wrap items-center gap-4 border-t border-b border-rule py-3">
         <span className="eyebrow">Language</span>
         <div className="flex items-center gap-1">
           {LANGUAGES.map((l) => {

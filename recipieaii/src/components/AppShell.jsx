@@ -18,7 +18,7 @@ export default function AppShell() {
 
   return (
     <div className="min-h-dvh bg-paper text-ink flex flex-col">
-      <header className="sticky top-0 z-40 backdrop-blur-md bg-paper/80 border-b border-rule">
+      <header className="no-print sticky top-0 z-40 backdrop-blur-md bg-paper/80 border-b border-rule">
         <div className="max-w-6xl mx-auto px-6 lg:px-10 h-16 flex items-center justify-between gap-6">
           <Link to="/app" className="flex items-baseline gap-2 shrink-0">
             <span className="font-display text-2xl leading-none">
@@ -79,7 +79,7 @@ export default function AppShell() {
         </div>
       </main>
 
-      <footer className="border-t border-rule">
+      <footer className="no-print border-t border-rule">
         <div className="max-w-6xl mx-auto px-6 lg:px-10 h-14 flex items-center justify-between text-xs text-ink-muted">
           <span>Recipy<span className="italic text-terracotta">AI</span> · Vol. i</span>
           <span className="tnum">© 2026</span>

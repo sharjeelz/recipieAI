@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Alert, Button, Card, Pill, SectionLabel, Spinner } from '../components/ui'
+import { formatAbsolute, formatRelativeTime } from '../lib/relativeTime'
 
 export default function AppHome() {
   const navigate = useNavigate()
@@ -159,6 +160,15 @@ function RecipeCard({ recipe, index }) {
         <div className="flex flex-wrap gap-3 mt-5 text-xs text-ink-muted tnum">
           {recipe.total_time_min && <span>⏱ {recipe.total_time_min} min</span>}
           {recipe.cuisine && <span className="capitalize">· {recipe.cuisine}</span>}
+          {recipe.created_at && (
+            <span
+              className="ml-auto italic"
+              title={formatAbsolute(recipe.created_at)}
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              added {formatRelativeTime(recipe.created_at)}
+            </span>
+          )}
         </div>
       </Link>
     </li>

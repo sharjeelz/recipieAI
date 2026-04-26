@@ -30,9 +30,10 @@ export default function Landing() {
             </Link>
             <Link
               to="/register"
-              className="ml-2 inline-flex items-center justify-center rounded-full bg-ink text-paper px-5 py-2 text-sm font-medium hover:bg-terracotta transition-colors"
+              className="ml-2 inline-flex items-center gap-2 rounded-full bg-terracotta text-paper-soft px-5 py-2.5 text-sm font-medium hover:bg-terracotta-deep transition-colors shadow-sm"
+              style={{ backgroundColor: '#c2452d', color: '#fbf7f0' }}
             >
-              Begin
+              Begin <span aria-hidden="true">→</span>
             </Link>
           </nav>
         </div>
