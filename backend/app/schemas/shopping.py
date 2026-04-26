@@ -10,6 +10,7 @@ class ShoppingItemOut(BaseModel):
     id: uuid.UUID
     item: str
     recipe_id: uuid.UUID | None = None
+    recipe_title: str | None = None
     checked_at: datetime | None = None
     created_at: datetime
 

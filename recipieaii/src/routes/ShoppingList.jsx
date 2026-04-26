@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
-import { Alert, Button, Card, Spinner } from '../components/ui'
+import { Alert, Button, Spinner } from '../components/ui'
 
 export default function ShoppingList() {
   const [items, setItems] = useState(null)
@@ -40,7 +40,11 @@ export default function ShoppingList() {
   async function onToggle(it) {
     const checked = !it.checked_at
     setItems((prev) =>
-      prev.map((x) => (x.id === it.id ? { ...x, checked_at: checked ? new Date().toISOString() : null } : x)),
+      prev.map((x) =>
+        x.id === it.id
+          ? { ...x, checked_at: checked ? new Date().toISOString() : null }
+          : x,
+      ),
     )
     try {
       await api.patch(`/shopping-list/${it.id}`, { checked })
@@ -81,94 +85,140 @@ export default function ShoppingList() {
   }
 
   if (err) return <Alert>{err}</Alert>
-  if (!items) return <Spinner label="Loading…" />
+  if (!items) return <Spinner label="Pulling the list…" />
 
   const unchecked = items.filter((i) => !i.checked_at)
   const checked = items.filter((i) => i.checked_at)
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Shopping list</h1>
-        <p className="text-sm text-gray-500 mt-1">
+    <div className="space-y-10">
+      {/* Header */}
+      <header>
+        <div className="flex items-baseline gap-4 mb-4">
+          <span className="font-display italic text-ink-muted tnum">01</span>
+          <span className="eyebrow">From kitchen to market</span>
+          <span className="flex-1 h-px bg-rule" />
+        </div>
+        <h1 className="display-lg">
+          The{' '}
+          <span className="italic" style={{ fontVariationSettings: '"opsz" 96, "SOFT" 100' }}>
+            market
+          </span>{' '}
+          list
+        </h1>
+        <p className="font-display italic text-ink-soft text-lg mt-3">
           {items.length === 0
-            ? 'Your list is empty. Add items below or from any recipe.'
-            : `${unchecked.length} to buy · ${checked.length} checked`}
+            ? 'A blank slip of paper. Add your first item below.'
+            : `${unchecked.length} to gather · ${checked.length} in the basket`}
         </p>
-      </div>
+      </header>
 
-      <form onSubmit={onAdd} className="flex gap-2">
-        <input
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          placeholder="Add an item (e.g. olive oil)"
-          className="flex-1 min-h-[44px] px-4 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-        />
-        <Button type="submit" disabled={busy || !newItem.trim()}>
+      {/* Add form */}
+      <form onSubmit={onAdd} className="flex gap-3 max-w-xl">
+        <div className="relative flex-1">
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 text-ink-muted">
+            +
+          </span>
+          <input
+            value={newItem}
+            onChange={(e) => setNewItem(e.target.value)}
+            placeholder="olive oil, sourdough, fennel bulb…"
+            className="w-full bg-transparent border-0 border-b border-rule pl-7 py-3 text-base font-display placeholder:text-ink-muted/60 focus:outline-none focus:border-ink transition-colors"
+          />
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          disabled={busy || !newItem.trim()}
+          className="shrink-0"
+        >
           Add
         </Button>
       </form>
 
-      {items.length > 0 && (
-        <div className="flex flex-wrap gap-2 text-sm">
-          {checked.length > 0 && (
-            <button
-              onClick={onClearChecked}
-              className="text-gray-600 hover:text-gray-900 underline"
-            >
-              Remove checked
-            </button>
-          )}
-          <button onClick={onClearAll} className="text-red-600 hover:text-red-800 underline">
-            Clear all
-          </button>
-        </div>
-      )}
-
+      {/* Lists */}
       {unchecked.length > 0 && (
-        <Card>
-          <ul className="divide-y divide-gray-100">
+        <section>
+          <p className="eyebrow mb-4">To gather</p>
+          <ul className="border-t border-rule">
             {unchecked.map((it) => (
               <Row key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
             ))}
           </ul>
-        </Card>
+        </section>
       )}
 
       {checked.length > 0 && (
-        <Card className="bg-gray-50">
-          <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">In cart</p>
-          <ul className="divide-y divide-gray-200">
+        <section>
+          <p className="eyebrow mb-4">In the basket</p>
+          <ul className="border-t border-rule-soft">
             {checked.map((it) => (
-              <Row key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
+              <Row
+                key={it.id}
+                item={it}
+                onToggle={onToggle}
+                onDelete={onDelete}
+                muted
+              />
             ))}
           </ul>
-        </Card>
+        </section>
+      )}
+
+      {items.length > 0 && (
+        <div className="flex flex-wrap gap-6 text-xs tracking-widest uppercase pt-4">
+          {checked.length > 0 && (
+            <button
+              onClick={onClearChecked}
+              className="text-ink-muted hover:text-ink link-grow"
+            >
+              Empty the basket
+            </button>
+          )}
+          <button
+            onClick={onClearAll}
+            className="text-tomato/80 hover:text-tomato link-grow"
+          >
+            Tear up the list
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
-function Row({ item, onToggle, onDelete }) {
+function Row({ item, onToggle, onDelete, muted }) {
   const isChecked = !!item.checked_at
   return (
-    <li className="flex items-center gap-3 py-2">
-      <input
-        type="checkbox"
-        checked={isChecked}
-        onChange={() => onToggle(item)}
-        className="w-5 h-5 accent-emerald-600 cursor-pointer"
-      />
+    <li
+      className={
+        'group flex items-center gap-5 py-4 border-b transition-opacity ' +
+        (muted ? 'border-rule-soft opacity-60' : 'border-rule')
+      }
+    >
+      <button
+        onClick={() => onToggle(item)}
+        aria-label={isChecked ? 'Uncheck' : 'Check off'}
+        className={
+          'shrink-0 h-6 w-6 rounded-full border flex items-center justify-center transition-colors ' +
+          (isChecked
+            ? 'bg-sage border-sage text-paper-soft'
+            : 'border-rule hover:border-ink')
+        }
+      >
+        {isChecked && <span className="text-xs leading-none">✓</span>}
+      </button>
       <span
         className={
-          'flex-1 text-gray-900 ' + (isChecked ? 'line-through text-gray-400' : '')
+          'flex-1 font-display text-lg ' +
+          (isChecked ? 'line-through text-ink-muted' : 'text-ink')
         }
       >
         {item.item}
       </span>
       <button
         onClick={() => onDelete(item)}
-        className="text-xs text-gray-400 hover:text-red-600 px-2"
+        className="opacity-0 group-hover:opacity-100 text-xs text-ink-muted hover:text-tomato transition-opacity px-2"
         aria-label="Remove"
       >
         ✕

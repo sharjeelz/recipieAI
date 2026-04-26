@@ -19,18 +19,29 @@ router = APIRouter()
 
 
 @router.get("", response_model=list[ShoppingItemOut])
-async def list_items(user: CurrentUser, db: DbSession) -> list[ShoppingListItem]:
+async def list_items(user: CurrentUser, db: DbSession) -> list[ShoppingItemOut]:
     rows = (
         await db.execute(
-            select(ShoppingListItem)
+            select(ShoppingListItem, Recipe.title)
+            .outerjoin(Recipe, Recipe.id == ShoppingListItem.recipe_id)
             .where(ShoppingListItem.user_id == user.id)
             .order_by(
                 ShoppingListItem.checked_at.is_not(None),
                 ShoppingListItem.created_at.desc(),
             )
         )
-    ).scalars().all()
-    return list(rows)
+    ).all()
+    return [
+        ShoppingItemOut(
+            id=item.id,
+            item=item.item,
+            recipe_id=item.recipe_id,
+            recipe_title=title,
+            checked_at=item.checked_at,
+            created_at=item.created_at,
+        )
+        for item, title in rows
+    ]
 
 
 @router.post("", response_model=ShoppingItemOut, status_code=status.HTTP_201_CREATED)

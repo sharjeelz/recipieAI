@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
-import { Alert, Button, Card, Input, Spinner } from '../components/ui'
+import { Alert, Button, Card, Pill, SectionLabel, Spinner } from '../components/ui'
 
 export default function AppHome() {
   const navigate = useNavigate()
@@ -31,72 +31,134 @@ export default function AppHome() {
   }
 
   return (
-    <div className="space-y-8">
-      <section>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          Paste a cooking video link
+    <div className="space-y-16">
+      {/* === Compose === */}
+      <section className="rise">
+        <div className="flex items-baseline gap-4 mb-6">
+          <span className="font-display italic text-ink-muted tnum">01</span>
+          <span className="eyebrow">Today's entry</span>
+          <span className="flex-1 h-px bg-rule" />
+        </div>
+
+        <h1 className="display-lg max-w-3xl">
+          Paste a link.{' '}
+          <span className="italic" style={{ fontVariationSettings: '"opsz" 96, "SOFT" 100' }}>
+            Cook the rest.
+          </span>
         </h1>
-        <p className="text-gray-600 mt-1">
-          YouTube, TikTok, or Instagram Reels — we'll turn it into a structured recipe.
+        <p className="mt-5 text-ink-soft text-lg max-w-2xl leading-relaxed">
+          YouTube, TikTok, or Instagram Reels — we'll listen, read, and structure it
+          into a recipe filed under your name.
         </p>
-        <form onSubmit={onSubmit} className="mt-5 space-y-3">
+
+        <form onSubmit={onSubmit} className="mt-8 space-y-4 max-w-3xl">
           {err && <Alert>{err}</Alert>}
-          <Input
-            type="url"
-            required
-            placeholder="https://youtube.com/watch?v=…  or  tiktok.com/@chef/video/…"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            disabled={busy}
-          />
-          <Button type="submit" disabled={busy} className="w-full sm:w-auto">
-            {busy ? 'Starting…' : 'Extract recipe'}
-          </Button>
+
+          <div className="relative">
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 font-display italic text-ink-muted text-lg pointer-events-none">
+              ↳
+            </span>
+            <input
+              type="url"
+              required
+              placeholder="https://youtube.com/watch?v=…   tiktok.com/@chef/video/…"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={busy}
+              className="w-full bg-transparent border-0 border-b-2 border-rule pl-7 pr-2 py-4 text-lg sm:text-xl font-display placeholder:text-ink-muted/60 focus:outline-none focus:border-ink transition-colors"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <p className="text-xs text-ink-muted leading-relaxed max-w-md">
+              We try captions first, then the description, audio only if needed.
+              A small classifier keeps non-recipe videos out of your archive.
+            </p>
+            <Button
+              type="submit"
+              variant="accent"
+              size="lg"
+              disabled={busy}
+              className="shrink-0"
+            >
+              {busy ? 'Starting…' : 'Extract recipe →'}
+            </Button>
+          </div>
         </form>
       </section>
 
+      {/* === Recent === */}
       <section>
-        <div className="flex items-baseline justify-between mb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Recent</h2>
-          <Link to="/app/library" className="text-sm text-emerald-700 hover:underline">
-            All recipes →
-          </Link>
+        <SectionLabel number="02">Lately in your archive</SectionLabel>
+
+        <div className="mt-8">
+          {recent === null ? (
+            <Spinner label="Pulling the file…" />
+          ) : recent.length === 0 ? (
+            <EmptyArchive />
+          ) : (
+            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recent.map((r, i) => (
+                <RecipeCard key={r.id} recipe={r} index={i} />
+              ))}
+            </ul>
+          )}
+
+          {recent && recent.length > 0 && (
+            <div className="mt-8 flex justify-end">
+              <Link
+                to="/app/library"
+                className="link-grow text-sm text-terracotta tracking-wide"
+              >
+                View the full archive →
+              </Link>
+            </div>
+          )}
         </div>
-        {recent === null ? (
-          <Spinner label="Loading recipes…" />
-        ) : recent.length === 0 ? (
-          <Card>
-            <p className="text-gray-600">
-              No recipes yet. Paste a link above to get started.
-            </p>
-          </Card>
-        ) : (
-          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {recent.map((r) => (
-              <RecipeCard key={r.id} recipe={r} />
-            ))}
-          </ul>
-        )}
       </section>
     </div>
   )
 }
 
-function RecipeCard({ recipe }) {
+function EmptyArchive() {
+  return (
+    <Card className="text-center py-12">
+      <p className="font-display italic text-ink-muted text-lg">
+        An empty page.
+      </p>
+      <p className="text-ink-soft mt-2">
+        Paste your first link above to begin.
+      </p>
+    </Card>
+  )
+}
+
+function RecipeCard({ recipe, index }) {
   return (
     <li>
       <Link
         to={`/app/recipes/${recipe.id}`}
-        className="block bg-white rounded-xl border border-gray-100 p-4 hover:border-emerald-300 hover:shadow transition"
+        className="group block bg-paper-soft border border-rule-soft rounded-2xl p-6 hover:border-ink/30 hover:shadow-[0_4px_28px_-12px_rgba(28,24,21,0.18)] transition-all"
       >
-        <h3 className="font-semibold text-gray-900 line-clamp-2">{recipe.title}</h3>
+        <div className="flex items-baseline justify-between mb-4">
+          <span className="font-display italic text-ink-muted tnum text-sm">
+            {String(index + 1).padStart(2, '0')}
+          </span>
+          {recipe.visibility === 'public' && (
+            <Pill tone="accent">public</Pill>
+          )}
+        </div>
+        <h3 className="font-display text-xl leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
+          {recipe.title}
+        </h3>
         {recipe.summary && (
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">{recipe.summary}</p>
+          <p className="text-sm text-ink-soft mt-2 line-clamp-2">
+            {recipe.summary}
+          </p>
         )}
-        <div className="flex gap-3 mt-3 text-xs text-gray-500">
-          {recipe.total_time_min && <span>{recipe.total_time_min} min</span>}
-          {recipe.cuisine && <span className="capitalize">{recipe.cuisine}</span>}
-          <span className="ml-auto capitalize">{recipe.visibility}</span>
+        <div className="flex flex-wrap gap-3 mt-5 text-xs text-ink-muted tnum">
+          {recipe.total_time_min && <span>⏱ {recipe.total_time_min} min</span>}
+          {recipe.cuisine && <span className="capitalize">· {recipe.cuisine}</span>}
         </div>
       </Link>
     </li>

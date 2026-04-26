@@ -10,6 +10,7 @@ import JobStatus from './routes/JobStatus'
 import RecipeView from './routes/RecipeView'
 import CookMode from './routes/CookMode'
 import ShoppingList from './routes/ShoppingList'
+import Settings from './routes/Settings'
 import Share from './routes/Share'
 import NotFound from './routes/NotFound'
 
@@ -41,6 +42,7 @@ export default function App() {
         <Route index element={<AppHome />} />
         <Route path="library" element={<Library />} />
         <Route path="shopping-list" element={<ShoppingList />} />
+        <Route path="settings" element={<Settings />} />
         <Route path="jobs/:jobId" element={<JobStatus />} />
         <Route path="recipes/:recipeId" element={<RecipeView />} />
       </Route>

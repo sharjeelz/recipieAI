@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
-import { Alert, Button, Card, Spinner } from '../components/ui'
+import { Alert, Button, Spinner } from '../components/ui'
 import RecipeBody from '../components/RecipeBody'
 
 const LANGUAGES = [
@@ -81,9 +81,9 @@ export default function RecipeView() {
       const r = await api.post(`/shopping-list/from-recipe/${recipeId}`)
       const msg =
         r.added === 0
-          ? 'All ingredients already on your list.'
+          ? 'All items already on your list.'
           : `Added ${r.added} item${r.added === 1 ? '' : 's'}` +
-            (r.skipped ? ` · ${r.skipped} already on list` : '')
+            (r.skipped ? ` · ${r.skipped} already there` : '')
       setShopStatus(msg)
     } catch (e) {
       setErr(e.message)
@@ -112,68 +112,155 @@ export default function RecipeView() {
   }
 
   if (err) return <Alert>{err}</Alert>
-  if (!recipe) return <Spinner label="Loading recipe…" />
+  if (!recipe) return <Spinner label="Pulling the file…" />
 
   const active = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0]
   const displayed = lang === 'en' ? recipe : { ...recipe, ...translations[lang] }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => navigate(`/cook/${recipeId}`)} disabled={busy}>
-          👩‍🍳 Start cooking
-        </Button>
-        <Button variant="secondary" onClick={onAddToShoppingList} disabled={busy}>
-          🛒 Add to shopping list
-        </Button>
-        <Button variant="secondary" onClick={onShare} disabled={busy}>
-          🔗 Share
-        </Button>
-        <Button variant="secondary" onClick={onToggleVisibility} disabled={busy}>
-          {recipe.visibility === 'public' ? 'Make private' : 'Make public'}
-        </Button>
-        <Button variant="danger" onClick={onDelete} disabled={busy} className="ml-auto">
-          Delete
-        </Button>
-      </div>
+    <div className="space-y-10">
+      {/* Floating action bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rise">
+        <button
+          onClick={() => navigate(-1)}
+          className="link-grow text-sm text-ink-muted tracking-wide"
+        >
+          ← Back
+        </button>
 
-      <div className="flex flex-wrap items-center gap-2 text-sm">
-        <span className="text-gray-500">Language:</span>
-        {LANGUAGES.map((l) => (
-          <button
-            key={l.code}
-            type="button"
-            onClick={() => onChangeLanguage(l.code)}
-            disabled={translating}
-            className={
-              'px-3 py-1.5 rounded-full border transition ' +
-              (lang === l.code
-                ? 'bg-emerald-600 text-white border-emerald-600'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-emerald-400')
-            }
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            onClick={() => navigate(`/cook/${recipeId}`)}
+            disabled={busy}
+            variant="accent"
           >
-            {l.label}
-          </button>
-        ))}
-        {translating && <Spinner label="Translating…" />}
+            <span className="mr-2">⌬</span> Start cooking
+          </Button>
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={onAddToShoppingList}
+            disabled={busy}
+          >
+            + Market list
+          </Button>
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={onShare}
+            disabled={busy}
+          >
+            Share
+          </Button>
+          <VisibilityToggle
+            visibility={recipe.visibility}
+            onToggle={onToggleVisibility}
+            disabled={busy}
+          />
+          <Button
+            variant="ghost"
+            size="md"
+            onClick={onDelete}
+            disabled={busy}
+            className="text-tomato hover:text-tomato"
+          >
+            Delete
+          </Button>
+        </div>
       </div>
 
+      {/* Inline status banners */}
       {shopStatus && (
-        <Card className="bg-emerald-50 border-emerald-200">
-          <p className="text-sm text-emerald-900">{shopStatus}</p>
-        </Card>
+        <div className="rounded-2xl bg-sage-soft border border-sage/20 px-5 py-3 text-sm text-[#3a4a2c] flex items-center gap-3">
+          <span className="font-display italic">✓</span>
+          {shopStatus}
+        </div>
       )}
 
       {shareUrl && (
-        <Card className="bg-emerald-50 border-emerald-200">
-          <p className="text-sm text-emerald-900 mb-1">Share link:</p>
-          <code className="text-xs break-all text-emerald-800">{shareUrl}</code>
-        </Card>
+        <div className="rounded-2xl bg-saffron-soft border border-saffron/30 px-5 py-4">
+          <p className="eyebrow mb-1 text-[#7a5612]">Share link</p>
+          <code className="text-xs sm:text-sm break-all text-ink-soft tracking-tight">
+            {shareUrl}
+          </code>
+        </div>
       )}
 
-      <div dir={active.dir}>
+      {/* Language switcher — magazine style */}
+      <div className="flex flex-wrap items-center gap-4 border-t border-b border-rule py-3">
+        <span className="eyebrow">Language</span>
+        <div className="flex items-center gap-1">
+          {LANGUAGES.map((l) => {
+            const active = lang === l.code
+            return (
+              <button
+                key={l.code}
+                type="button"
+                onClick={() => onChangeLanguage(l.code)}
+                disabled={translating}
+                className={
+                  'px-3 py-1.5 rounded-full text-sm transition-colors ' +
+                  (active
+                    ? 'bg-ink text-paper'
+                    : 'text-ink-muted hover:text-ink')
+                }
+              >
+                {l.label}
+              </button>
+            )
+          })}
+        </div>
+        {translating && <Spinner label="Translating…" />}
+      </div>
+
+      {/* The page itself */}
+      <div dir={active.dir} className="rise delay-2">
         <RecipeBody recipe={displayed} />
       </div>
     </div>
+  )
+}
+
+/**
+ * Visibility toggle — a stateful pill, not just an action label.
+ * Public:  filled sage dot + "Public"   (clearly the on state)
+ * Private: hollow circle + "Private"    (clearly the off state)
+ * Click flips the state. Title attribute spells out the consequence.
+ */
+function VisibilityToggle({ visibility, onToggle, disabled }) {
+  const isPublic = visibility === 'public'
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      disabled={disabled}
+      aria-pressed={isPublic}
+      title={
+        isPublic
+          ? 'Public — anyone with the link can view. Click to make private.'
+          : 'Private — only you can see this. Click to make public.'
+      }
+      className={
+        'inline-flex items-center gap-2.5 px-4 py-3 min-h-[44px] rounded-full border text-sm font-medium tracking-wide transition-all ' +
+        'disabled:opacity-50 disabled:cursor-not-allowed ' +
+        (isPublic
+          ? 'bg-sage-soft border-sage/40 text-[#3a4a2c] hover:border-sage'
+          : 'bg-paper-soft border-rule text-ink-soft hover:border-ink')
+      }
+    >
+      <span
+        aria-hidden="true"
+        className={
+          'inline-flex h-3 w-3 rounded-full transition-colors ' +
+          (isPublic
+            ? 'bg-sage shadow-[0_0_0_3px_rgba(93,111,77,0.18)]'
+            : 'border border-ink-muted bg-transparent')
+        }
+      />
+      <span>{isPublic ? 'Public' : 'Private'}</span>
+      <span className="text-ink-muted/70 text-xs hidden sm:inline">
+        · tap to {isPublic ? 'make private' : 'make public'}
+      </span>
+    </button>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { scaleQuantity } from '../lib/quantity'
+import { Pill } from './ui'
 
 export default function RecipeBody({ recipe }) {
   const baseServings = recipe.servings || null
@@ -8,135 +9,226 @@ export default function RecipeBody({ recipe }) {
   const scaled = scale !== 1
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-gray-900">{recipe.title}</h1>
-        {recipe.summary && <p className="text-gray-600 mt-2">{recipe.summary}</p>}
-        <div className="flex flex-wrap gap-2 mt-3 text-sm text-gray-600">
+    <article className="space-y-14">
+      {/* === Headline block === */}
+      <header className="rise">
+        <div className="flex items-center gap-4 mb-6">
+          <span className="font-display italic text-ink-muted tnum">№001</span>
+          <span className="eyebrow">Today's recipe</span>
+          <span className="flex-1 h-px bg-rule" />
+        </div>
+
+        <h1 className="display-xl">{renderTitle(recipe.title)}</h1>
+
+        {recipe.summary && (
+          <p className="font-display text-xl sm:text-2xl leading-snug text-ink-soft mt-6 max-w-3xl">
+            {recipe.summary}
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-3 mt-7">
           {recipe.servings != null && (
-            <Pill>🍽️ {recipe.servings} serving{recipe.servings === 1 ? '' : 's'}</Pill>
+            <Pill>
+              🍽 {recipe.servings} {recipe.servings === 1 ? 'serving' : 'servings'}
+            </Pill>
           )}
-          {recipe.total_time_min != null && <Pill>⏱️ {recipe.total_time_min} min</Pill>}
-          {recipe.cuisine && <Pill className="capitalize">{recipe.cuisine}</Pill>}
+          {recipe.total_time_min != null && (
+            <Pill>⏱ {recipe.total_time_min} min</Pill>
+          )}
+          {recipe.cuisine && (
+            <Pill tone="sage" className="capitalize">
+              {recipe.cuisine}
+            </Pill>
+          )}
           {recipe.cost_usd != null && (
-            <Pill className="bg-emerald-50 text-emerald-800" title={costTooltip(recipe)}>
+            <Pill tone="saffron" title={costTooltip(recipe)}>
               ≈ {formatCost(recipe.cost_usd)}
             </Pill>
           )}
         </div>
+
         {recipe.source_url && (
           <a
             href={recipe.source_url}
             target="_blank"
             rel="noreferrer"
-            className="inline-block mt-3 text-sm text-emerald-700 hover:underline"
+            className="link-grow inline-flex items-center gap-2 mt-6 text-sm text-terracotta tracking-wide"
           >
             Source video ↗
           </a>
         )}
       </header>
 
-      <section>
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-          <h2 className="text-xl font-semibold">Ingredients</h2>
-          {baseServings != null && (
-            <ServingsScaler
-              base={baseServings}
-              value={servings}
-              onChange={setServings}
-            />
-          )}
-        </div>
-        <ul className="space-y-1.5">
-          {recipe.ingredients.map((ing) => (
-            <li key={`${ing.position}-${ing.item}`} className="flex gap-3">
-              <span className="text-gray-900 min-w-[80px] tabular-nums">
-                {[scaled ? scaleQuantity(ing.quantity, scale) : ing.quantity, ing.unit]
-                  .filter(Boolean)
-                  .join(' ') || ''}
+      {/* === Ingredients ↔ Steps spread === */}
+      <div className="grid grid-cols-12 gap-x-6 lg:gap-x-12 gap-y-12">
+        {/* Left rail — ingredients */}
+        <section className="col-span-12 lg:col-span-5 lg:sticky lg:top-24 lg:self-start">
+          <div className="flex items-baseline justify-between mb-5">
+            <h2 className="display-md">
+              <span className="italic" style={{ fontVariationSettings: '"opsz" 60, "SOFT" 100' }}>
+                Ingredients
               </span>
-              <span className="text-gray-800 flex-1">
-                {ing.item}
-                {ing.notes && <span className="text-gray-500"> — {ing.notes}</span>}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </section>
+            </h2>
+            {baseServings != null && (
+              <ServingsScaler
+                base={baseServings}
+                value={servings}
+                onChange={setServings}
+              />
+            )}
+          </div>
 
-      <section>
-        <h2 className="text-xl font-semibold mb-3">Steps</h2>
-        <ol className="space-y-3">
-          {recipe.steps.map((s) => (
-            <li key={`${s.position}`} className="flex gap-3">
-              <span className="flex-shrink-0 w-7 h-7 rounded-full bg-emerald-100 text-emerald-800 font-semibold flex items-center justify-center text-sm">
-                {s.position + 1}
-              </span>
-              <p className="text-gray-800 flex-1">{s.text}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      {recipe.tips && recipe.tips.length > 0 && (
-        <section>
-          <h2 className="text-xl font-semibold mb-3">💡 Tips</h2>
-          <ul className="space-y-2 bg-amber-50 border border-amber-200 rounded-lg p-4">
-            {recipe.tips.map((tip, i) => (
-              <li key={i} className="text-amber-900 flex gap-2">
-                <span className="text-amber-600 flex-shrink-0">•</span>
-                <span className="flex-1">{tip}</span>
+          <ul className="border-t border-rule">
+            {recipe.ingredients.map((ing) => (
+              <li
+                key={`${ing.position}-${ing.item}`}
+                className="grid grid-cols-[7rem_1fr] gap-4 py-3 border-b border-rule-soft"
+              >
+                <span className="font-display text-ink-muted tnum text-[15px] pt-0.5">
+                  {[
+                    scaled ? scaleQuantity(ing.quantity, scale) : ing.quantity,
+                    ing.unit,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || '—'}
+                </span>
+                <span className="text-ink leading-snug">
+                  <span className="font-display text-[17px]">{ing.item}</span>
+                  {ing.notes && (
+                    <span className="block text-sm text-ink-muted italic mt-0.5">
+                      {ing.notes}
+                    </span>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
         </section>
+
+        {/* Right column — steps */}
+        <section className="col-span-12 lg:col-span-7">
+          <h2 className="display-md mb-5">
+            <span className="italic" style={{ fontVariationSettings: '"opsz" 60, "SOFT" 100' }}>
+              Method
+            </span>
+          </h2>
+
+          <ol className="space-y-7">
+            {recipe.steps.map((s) => (
+              <li
+                key={`${s.position}`}
+                className="grid grid-cols-[3.5rem_1fr] gap-5"
+              >
+                <span
+                  className="font-display italic text-terracotta leading-none tnum"
+                  style={{
+                    fontSize: '2.6rem',
+                    fontVariationSettings: '"opsz" 96, "SOFT" 100',
+                    fontWeight: 300,
+                  }}
+                >
+                  {String(s.position + 1).padStart(2, '0')}
+                </span>
+                <p className="font-display text-[18px] sm:text-[19px] leading-relaxed text-ink pt-1">
+                  {s.text}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      </div>
+
+      {/* === Tips === */}
+      {recipe.tips && recipe.tips.length > 0 && (
+        <section className="border-t border-rule pt-10">
+          <div className="flex items-baseline gap-4 mb-6">
+            <span className="font-display italic text-saffron tnum">aside</span>
+            <span className="eyebrow">From the chef</span>
+            <span className="flex-1 h-px bg-rule" />
+          </div>
+          <div className="bg-saffron-soft/50 border border-saffron/20 rounded-2xl p-7 sm:p-9 relative">
+            <span
+              aria-hidden="true"
+              className="absolute -top-3 left-7 bg-paper px-3 font-display italic text-saffron text-sm"
+            >
+              ❋ Tips
+            </span>
+            <ul className="space-y-4">
+              {recipe.tips.map((tip, i) => (
+                <li
+                  key={i}
+                  className="grid grid-cols-[1.5rem_1fr] gap-3 font-display text-[17px] leading-relaxed text-ink"
+                >
+                  <span className="text-saffron italic tnum text-sm pt-1">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                  <span>{tip}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       )}
-    </div>
+    </article>
+  )
+}
+
+/* Render the title splitting on the last word so we can italicize it for visual rhythm */
+function renderTitle(title) {
+  if (!title) return null
+  const trimmed = title.trim()
+  const lastSpace = trimmed.lastIndexOf(' ')
+  if (lastSpace === -1 || trimmed.length < 14) return trimmed
+  const head = trimmed.slice(0, lastSpace)
+  const tail = trimmed.slice(lastSpace + 1)
+  return (
+    <>
+      {head}{' '}
+      <span
+        className="italic"
+        style={{ fontVariationSettings: '"opsz" 144, "SOFT" 100' }}
+      >
+        {tail}
+      </span>
+    </>
   )
 }
 
 function ServingsScaler({ base, value, onChange }) {
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-gray-500">Servings</span>
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(1, value - 1))}
-        className="w-8 h-8 rounded-full border border-gray-300 hover:border-emerald-500 flex items-center justify-center"
-        aria-label="Decrease servings"
-      >
-        −
-      </button>
-      <span className="min-w-[2ch] text-center font-semibold text-gray-900">{value}</span>
-      <button
-        type="button"
-        onClick={() => onChange(value + 1)}
-        className="w-8 h-8 rounded-full border border-gray-300 hover:border-emerald-500 flex items-center justify-center"
-        aria-label="Increase servings"
-      >
-        +
-      </button>
+    <div className="flex items-center gap-3 text-sm">
+      <span className="eyebrow">Serves</span>
+      <div className="inline-flex items-center bg-paper-soft border border-rule rounded-full">
+        <button
+          type="button"
+          onClick={() => onChange(Math.max(1, value - 1))}
+          className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink transition-colors"
+          aria-label="Decrease servings"
+        >
+          −
+        </button>
+        <span className="px-2 font-display tnum text-base text-ink min-w-[2ch] text-center">
+          {value}
+        </span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          className="w-9 h-9 flex items-center justify-center text-ink-muted hover:text-ink transition-colors"
+          aria-label="Increase servings"
+        >
+          +
+        </button>
+      </div>
       {value !== base && (
         <button
           type="button"
           onClick={() => onChange(base)}
-          className="text-xs text-emerald-700 hover:underline ml-1"
+          className="link-grow text-xs text-terracotta tracking-wide"
         >
-          Reset
+          reset
         </button>
       )}
     </div>
-  )
-}
-
-function Pill({ children, className = '', title }) {
-  return (
-    <span
-      className={`inline-flex items-center bg-gray-100 rounded-full px-3 py-1 ${className}`}
-      title={title}
-    >
-      {children}
-    </span>
   )
 }
 
