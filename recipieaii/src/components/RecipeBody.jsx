@@ -10,6 +10,31 @@ export default function RecipeBody({ recipe }) {
 
   return (
     <article className="space-y-14">
+      {/* === Hero image (when we have one) === */}
+      {recipe.thumbnail_url && (
+        <figure className="rise relative -mt-4 mb-2 overflow-hidden rounded-2xl border border-rule-soft bg-paper-deep">
+          <img
+            src={recipe.thumbnail_url}
+            alt=""
+            loading="lazy"
+            referrerPolicy="no-referrer"
+            onError={(e) => {
+              e.currentTarget.parentElement.style.display = 'none'
+            }}
+            className="w-full aspect-video object-cover"
+          />
+          {/* warm overlay so the image doesn't fight the editorial palette */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(180deg, rgba(28,24,21,0) 60%, rgba(28,24,21,0.18) 100%)',
+            }}
+          />
+        </figure>
+      )}
+
       {/* === Headline block === */}
       <header className="rise">
         <div className="flex items-center gap-4 mb-6">

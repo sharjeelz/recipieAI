@@ -64,6 +64,7 @@ async def process_job(job_id: uuid.UUID, video_url: str, settings: Settings) -> 
             output_tokens=result.output_tokens,
             transcribe_seconds=result.transcribe_seconds,
             cost_usd=result.cost_usd,
+            thumbnail_url=result.thumbnail_url,
             structured=result.recipe,
         )
         await _complete(

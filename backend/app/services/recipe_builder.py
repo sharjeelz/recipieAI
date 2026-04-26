@@ -17,6 +17,7 @@ class BuildResult:
     output_tokens: int
     transcribe_seconds: float | None
     cost_usd: float
+    thumbnail_url: str | None = None
 
 
 async def build_recipe(video_url: str, settings: Settings) -> BuildResult:
@@ -55,4 +56,5 @@ async def build_recipe(video_url: str, settings: Settings) -> BuildResult:
         output_tokens=transcript.classify_output_tokens + result.output_tokens,
         transcribe_seconds=transcript.duration_seconds,
         cost_usd=round(classify_usd + structure_usd + transcribe_usd, 6),
+        thumbnail_url=transcript.thumbnail_url,
     )

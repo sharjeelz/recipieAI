@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Alert, Spinner } from '../components/ui'
 import CookingBuddy from '../components/CookingBuddy'
@@ -18,9 +18,14 @@ import {
   setTimerMuted,
 } from '../lib/timerSounds'
 
+const LANG_DIR = { en: 'ltr', ur: 'rtl', ar: 'rtl' }
+
 export default function CookMode() {
   const { recipeId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const lang = (searchParams.get('lang') || 'en').toLowerCase()
+  const dir = LANG_DIR[lang] || 'ltr'
   const [recipe, setRecipe] = useState(null)
   const [err, setErr] = useState(null)
   const [stepIndex, setStepIndex] = useState(0)
@@ -35,11 +40,47 @@ export default function CookMode() {
   const stepCount = recipe?.steps?.length || 0
   const currentStep = recipe?.steps?.[stepIndex]
   const stepSeconds = currentStep?.duration_seconds || 0
-  const hasTimer = stepSeconds > 0
+  // Only honor a duration if the step text actually mentions time. This
+  // protects against the LLM guessing a duration for variable steps like
+  // "bring to a boil" or "until golden brown".
+  const hasTimer = stepSeconds > 0 && stepMentionsTime(currentStep?.text || '')
+
+  // Arrow direction follows reading direction: in RTL, "back/previous"
+  // points right and "next" points left because the user's eye is moving
+  // right→left.
+  const isRtl = dir === 'rtl'
+  const arrBack = isRtl ? '→' : '←'
+  const arrFwd = isRtl ? '←' : '→'
 
   useEffect(() => {
-    api.get(`/recipes/${recipeId}`).then(setRecipe).catch((e) => setErr(e.message))
-  }, [recipeId])
+    let cancelled = false
+    async function load() {
+      try {
+        const base = await api.get(`/recipes/${recipeId}`)
+        if (cancelled) return
+        if (lang === 'en') {
+          setRecipe(base)
+          return
+        }
+        // Fetch (or pull from cache, server-side) the translation. We merge
+        // it onto the base so non-translated bits (cost, kcal, source_url)
+        // still show up in cook mode if anything reads them.
+        try {
+          const t = await api.post(`/recipes/${recipeId}/translate`, { language: lang })
+          if (cancelled) return
+          setRecipe({ ...base, ...t })
+        } catch {
+          if (!cancelled) setRecipe(base)
+        }
+      } catch (e) {
+        if (!cancelled) setErr(e.message)
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [recipeId, lang])
 
   // Screen wake lock — keep the phone screen on while cooking
   useEffect(() => {
@@ -140,13 +181,16 @@ export default function CookMode() {
 
   useEffect(() => {
     function onKey(e) {
-      if (e.key === 'ArrowRight' || e.key === ' ') goNext()
-      else if (e.key === 'ArrowLeft') goPrev()
+      // In RTL the visual "forward" direction is left, so arrow keys mirror.
+      const isRtlLayout = dir === 'rtl'
+      if (e.key === ' ') goNext()
+      else if (e.key === 'ArrowRight') (isRtlLayout ? goPrev : goNext)()
+      else if (e.key === 'ArrowLeft') (isRtlLayout ? goNext : goPrev)()
       else if (e.key === 'Escape') navigate(-1)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [goNext, goPrev, navigate])
+  }, [goNext, goPrev, navigate, dir])
 
   if (err) {
     return (
@@ -169,6 +213,8 @@ export default function CookMode() {
   return (
     <div
       className="fixed inset-0 flex flex-col text-paper"
+      lang={lang}
+      dir={dir}
       style={{
         background:
           'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(194,69,45,0.1) 0%, rgba(28,24,21,1) 60%), #1c1815',
@@ -180,7 +226,7 @@ export default function CookMode() {
           onClick={() => navigate(-1)}
           className="text-paper/70 hover:text-paper text-sm tracking-wide min-h-[44px] px-2 transition-colors"
         >
-          ← Exit
+          {arrBack} Exit
         </button>
         <div className="flex-1 text-center px-4 min-w-0">
           <p
@@ -200,11 +246,14 @@ export default function CookMode() {
         </div>
       </header>
 
-      {/* Progress */}
+      {/* Progress — fills from the visual "start" edge in either direction */}
       <div className="h-px bg-paper/10">
         <div
           className="h-full bg-terracotta transition-all duration-500"
-          style={{ width: `${progress}%` }}
+          style={{
+            width: `${progress}%`,
+            marginInlineStart: 0,
+          }}
         />
       </div>
 
@@ -269,7 +318,7 @@ export default function CookMode() {
           disabled={stepIndex === 0}
           className="h-16 rounded-full border border-paper/20 text-paper/90 font-medium tracking-wide hover:border-paper/60 hover:bg-paper/5 disabled:opacity-25 disabled:cursor-not-allowed transition-all"
         >
-          ← Previous
+          {arrBack} Previous
         </button>
         {isLast ? (
           <button
@@ -283,11 +332,25 @@ export default function CookMode() {
             onClick={goNext}
             className="h-16 rounded-full bg-terracotta text-paper font-medium tracking-wide hover:bg-terracotta-deep transition-colors"
           >
-            Next →
+            Next {arrFwd}
           </button>
         )}
       </footer>
     </div>
+  )
+}
+
+/**
+ * Does the step text actually reference a clock time? We use this to
+ * suppress the timer when the LLM guessed a duration for a variable step
+ * (e.g. "bring to a boil", "until golden brown"). Matches: "10 min",
+ * "5 minutes", "30 sec", "1 hour", "2 hrs", "1.5 hours", "1/2 hour",
+ * and the rare "10-15 minutes" range.
+ */
+function stepMentionsTime(text) {
+  if (!text) return false
+  return /\b(?:\d+(?:[.\/-]\d+)?)\s*(?:s|sec|secs|second|seconds|m|min|mins|minute|minutes|h|hr|hrs|hour|hours)\b/i.test(
+    text,
   )
 }
 

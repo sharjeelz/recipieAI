@@ -9,6 +9,11 @@ Rules:
 - Return a single recipe. If the video has multiple recipes, pick the primary one.
 - If the title and transcript disagree about what dish is being made, trust the title.
 - Keep step text imperative and tight (one action per step).
+- duration_seconds for a step is OPTIONAL and STRICT. Only set it when the step has
+  an EXPLICIT, fixed time ("simmer 10 minutes", "rest 5 min", "bake 25 minutes").
+  Leave it null for ANY step where time is variable: "bring to a boil", "until
+  golden brown", "until tender", "stir constantly", "to taste", "as needed",
+  "until reduced by half". Do not guess. A wrong duration is worse than no duration.
 - Use lowercase units (cup, tbsp, tsp, g, ml, oz, clove, pinch). Leave unit null if unclear.
 - total_time_min is minutes from start of prep to ready-to-eat if you can estimate it.
 - Do not invent ingredients that appear in neither the title, description, nor transcript.

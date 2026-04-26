@@ -135,40 +135,76 @@ function EmptyArchive() {
 }
 
 function RecipeCard({ recipe, index }) {
+  const [thumbErr, setThumbErr] = useState(false)
+  const showThumb = !!recipe.thumbnail_url && !thumbErr
   return (
     <li>
       <Link
         to={`/app/recipes/${recipe.id}`}
-        className="group block bg-paper-soft border border-rule-soft rounded-2xl p-6 hover:border-ink/30 hover:shadow-[0_4px_28px_-12px_rgba(28,24,21,0.18)] transition-all"
+        className="group flex bg-paper-soft border border-rule-soft rounded-2xl overflow-hidden hover:border-ink/30 hover:shadow-[0_4px_28px_-12px_rgba(28,24,21,0.18)] transition-all"
       >
-        <div className="flex items-baseline justify-between mb-4">
-          <span className="font-display italic text-ink-muted tnum text-sm">
-            {String(index + 1).padStart(2, '0')}
-          </span>
-          {recipe.visibility === 'public' && (
-            <Pill tone="accent">public</Pill>
+        {/* Square thumbnail on the left — compact for the 2-col home grid */}
+        <div className="shrink-0 w-28 sm:w-32 aspect-square bg-paper-deep relative overflow-hidden">
+          {showThumb ? (
+            <img
+              src={recipe.thumbnail_url}
+              alt=""
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onError={() => setThumbErr(true)}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.05]"
+            />
+          ) : (
+            <div
+              className="w-full h-full flex items-center justify-center"
+              style={{
+                background:
+                  'radial-gradient(circle at 30% 30%, #f2d8ce 0%, #ebe2d2 70%)',
+              }}
+            >
+              <span
+                className="font-display italic text-terracotta/70"
+                style={{
+                  fontSize: '3rem',
+                  lineHeight: 1,
+                  fontVariationSettings: '"opsz" 144, "SOFT" 100',
+                }}
+              >
+                {(recipe.title || '?').charAt(0).toUpperCase()}
+              </span>
+            </div>
           )}
         </div>
-        <h3 className="font-display text-xl leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
-          {recipe.title}
-        </h3>
-        {recipe.summary && (
-          <p className="text-sm text-ink-soft mt-2 line-clamp-2">
-            {recipe.summary}
-          </p>
-        )}
-        <div className="flex flex-wrap gap-3 mt-5 text-xs text-ink-muted tnum">
-          {recipe.total_time_min && <span>⏱ {recipe.total_time_min} min</span>}
-          {recipe.cuisine && <span className="capitalize">· {recipe.cuisine}</span>}
-          {recipe.created_at && (
-            <span
-              className="ml-auto italic"
-              title={formatAbsolute(recipe.created_at)}
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              added {formatRelativeTime(recipe.created_at)}
+
+        <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col">
+          <div className="flex items-baseline justify-between gap-2 mb-2">
+            <span className="font-display italic text-ink-muted tnum text-xs shrink-0">
+              {String(index + 1).padStart(2, '0')}
             </span>
-          )}
+            {recipe.visibility === 'public' && (
+              <Pill tone="accent">public</Pill>
+            )}
+          </div>
+          <h3 className="font-display text-lg leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
+            {recipe.title}
+          </h3>
+          <div className="flex flex-wrap gap-2 mt-auto pt-3 text-[11px] text-ink-muted">
+            {recipe.total_time_min && (
+              <span className="tnum">⏱ {recipe.total_time_min}m</span>
+            )}
+            {recipe.cuisine && (
+              <span className="capitalize">· {recipe.cuisine}</span>
+            )}
+            {recipe.created_at && (
+              <span
+                className="ml-auto italic"
+                title={formatAbsolute(recipe.created_at)}
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                {formatRelativeTime(recipe.created_at)}
+              </span>
+            )}
+          </div>
         </div>
       </Link>
     </li>

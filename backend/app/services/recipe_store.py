@@ -18,6 +18,7 @@ async def persist_recipe(
     output_tokens: int | None,
     transcribe_seconds: float | None,
     cost_usd: float | None,
+    thumbnail_url: str | None = None,
     structured: StructuredRecipe,
 ) -> Recipe:
     recipe = Recipe(
@@ -30,6 +31,7 @@ async def persist_recipe(
         cuisine=structured.cuisine,
         kcal_per_serving=structured.kcal_per_serving,
         tips=structured.tips or None,
+        thumbnail_url=thumbnail_url,
         visibility=visibility,
         llm_provider=llm_provider,
         llm_model=llm_model,

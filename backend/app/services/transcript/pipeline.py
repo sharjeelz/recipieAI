@@ -36,6 +36,7 @@ class TranscriptResult:
     duration_seconds: float | None
     title: str | None = None
     description: str | None = None
+    thumbnail_url: str | None = None
     # cumulative classifier cost across all sources we tried (includes the
     # accepted source itself). The final cost pill shows this + structuring.
     classify_model: str = ""
@@ -62,6 +63,7 @@ async def get_transcript(video_url: str, settings: Settings) -> TranscriptResult
             duration_seconds=duration,
             title=meta.title,
             description=meta.description,
+            thumbnail_url=meta.thumbnail_url,
             classify_model=classify_model,
             classify_input_tokens=classify_in,
             classify_output_tokens=classify_out,

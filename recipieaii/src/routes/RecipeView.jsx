@@ -151,11 +151,15 @@ export default function RecipeView() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            onClick={() => navigate(`/cook/${recipeId}`)}
+            onClick={() => {
+              const q = lang && lang !== 'en' ? `?lang=${lang}` : ''
+              navigate(`/cook/${recipeId}${q}`)
+            }}
             disabled={busy}
             variant="accent"
           >
-            <span className="mr-2">⌬</span> Start cooking
+            <span className="mr-2">⌬</span>
+            Start cooking{lang !== 'en' ? ` · ${active.label}` : ''}
           </Button>
           <Button
             variant="secondary"
@@ -242,7 +246,7 @@ export default function RecipeView() {
       </div>
 
       {/* The page itself */}
-      <div dir={active.dir} className="rise delay-2">
+      <div dir={active.dir} lang={active.code} className="rise delay-2">
         <RecipeBody recipe={displayed} />
       </div>
 

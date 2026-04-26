@@ -327,3 +327,101 @@ input:-webkit-autofill:focus {
 
 /* hide print-only elements on screen by default */
 .print-only { display: none; }
+
+/* ──────────────────────────────────────────────────────────
+   RTL language fonts. Urdu uses Noto Nastaliq Urdu (the
+   traditional calligraphic style Urdu readers expect — Naskh
+   looks too "Arabic" to a Pakistani eye). Arabic uses Noto
+   Naskh Arabic.
+
+   We cascade: script glyphs come from the Urdu/Arabic font,
+   Latin glyphs (numbers, units) fall through to Fraunces so
+   "200 g" still looks editorial.
+   ────────────────────────────────────────────────────────── */
+[lang="ur"],
+[lang="ur"] .font-display,
+[lang="ur"] h1,
+[lang="ur"] h2,
+[lang="ur"] h3,
+[lang="ur"] h4,
+[lang="ur"] p,
+[lang="ur"] li,
+[lang="ur"] span,
+[lang="ur"] blockquote,
+[lang="ur"] code {
+  font-family: "Noto Nastaliq Urdu", "Fraunces", "Iowan Old Style",
+    "Palatino Linotype", serif;
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0;
+  font-style: normal !important;
+}
+
+/* Nastaliq has dramatic vertical stacking — letters tower above and
+   plunge below the baseline, especially across joins. We need very
+   generous line-height (2.5+) and extra padding around list rows or
+   the descenders of one line collide with the ascenders below. */
+[lang="ur"] {
+  line-height: 2.6 !important;
+}
+[lang="ur"] h1,
+[lang="ur"] h2,
+[lang="ur"] h3,
+[lang="ur"] h4 {
+  line-height: 1.9 !important;
+}
+[lang="ur"] p,
+[lang="ur"] li > span,
+[lang="ur"] blockquote {
+  line-height: 2.7 !important;
+}
+[lang="ur"] li {
+  line-height: 2.6 !important;
+  padding-block: 0.6rem !important;
+}
+[lang="ur"] ol,
+[lang="ur"] ul {
+  /* loosen vertical rhythm between items */
+  row-gap: 0.5rem;
+}
+/* Override Tailwind's leading-* utilities inside Urdu pages */
+[lang="ur"] .leading-tight,
+[lang="ur"] .leading-snug,
+[lang="ur"] .leading-normal,
+[lang="ur"] .leading-relaxed,
+[lang="ur"] .leading-loose {
+  line-height: 2.6 !important;
+}
+
+/* Don't let italic Fraunces utility classes warp the script —
+   italic Nastaliq isn't a thing. */
+[lang="ur"] .italic,
+[lang="ur"] em,
+[lang="ur"] i {
+  font-style: normal !important;
+}
+
+[lang="ar"],
+[lang="ar"] .font-display,
+[lang="ar"] h1,
+[lang="ar"] h2,
+[lang="ar"] h3,
+[lang="ar"] h4,
+[lang="ar"] p,
+[lang="ar"] li,
+[lang="ar"] span,
+[lang="ar"] blockquote,
+[lang="ar"] code {
+  font-family: "Noto Naskh Arabic", "Fraunces", "Iowan Old Style", serif;
+  font-feature-settings: normal;
+  font-variation-settings: normal;
+  letter-spacing: 0;
+}
+[lang="ar"] {
+  line-height: 1.85;
+}
+[lang="ar"] h1,
+[lang="ar"] h2,
+[lang="ar"] h3 {
+  line-height: 1.4;
+}

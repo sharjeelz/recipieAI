@@ -39,6 +39,7 @@ class Recipe(Base):
     total_time_min: Mapped[int | None] = mapped_column(Integer)
     cuisine: Mapped[str | None] = mapped_column(String(100))
     kcal_per_serving: Mapped[int | None] = mapped_column(Integer)
+    thumbnail_url: Mapped[str | None] = mapped_column(String(2048))
     visibility: Mapped[Visibility] = mapped_column(
         Enum(Visibility, name="visibility"), default=Visibility.private, nullable=False
     )

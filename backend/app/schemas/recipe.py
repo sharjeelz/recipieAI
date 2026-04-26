@@ -36,6 +36,7 @@ class RecipeOut(BaseModel):
     total_time_min: int | None
     cuisine: str | None
     kcal_per_serving: int | None = None
+    thumbnail_url: str | None = None
     visibility: Visibility
     llm_provider: str | None
     llm_model: str | None = None
@@ -60,6 +61,7 @@ class RecipeSummary(BaseModel):
     summary: str | None
     total_time_min: int | None
     cuisine: str | None
+    thumbnail_url: str | None = None
     visibility: Visibility
     created_at: datetime
 

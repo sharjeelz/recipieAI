@@ -194,38 +194,44 @@ export default function Library() {
             <li key={r.id}>
               <Link
                 to={`/app/recipes/${r.id}`}
-                className="group h-full block bg-paper-soft border border-rule-soft rounded-2xl p-6 hover:border-ink/30 hover:shadow-[0_4px_28px_-12px_rgba(28,24,21,0.18)] transition-all"
+                className="group h-full flex flex-col bg-paper-soft border border-rule-soft rounded-2xl overflow-hidden hover:border-ink/30 hover:shadow-[0_4px_28px_-12px_rgba(28,24,21,0.18)] transition-all"
               >
-                <div className="flex items-baseline justify-between mb-4">
-                  <span className="font-display italic text-ink-muted tnum text-sm">
-                    №{String(i + 1).padStart(3, '0')}
-                  </span>
-                  {r.visibility === 'public' && <Pill tone="accent">public</Pill>}
-                </div>
-                <h3 className="font-display text-xl leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
-                  {r.title}
-                </h3>
-                {r.summary && (
-                  <p className="text-sm text-ink-soft mt-2 line-clamp-3">
-                    {r.summary}
-                  </p>
-                )}
-                <div className="flex flex-wrap items-baseline gap-3 mt-5 text-xs text-ink-muted">
-                  {r.total_time_min && (
-                    <span className="tnum">⏱ {r.total_time_min} min</span>
+                <CardImage
+                  src={r.thumbnail_url}
+                  fallback={r.title}
+                  badge={
+                    r.visibility === 'public'
+                      ? <Pill tone="accent">public</Pill>
+                      : null
+                  }
+                  index={i + 1}
+                />
+                <div className="flex flex-col flex-1 p-5">
+                  <h3 className="font-display text-xl leading-snug line-clamp-2 group-hover:text-terracotta transition-colors">
+                    {r.title}
+                  </h3>
+                  {r.summary && (
+                    <p className="text-sm text-ink-soft mt-2 line-clamp-3">
+                      {r.summary}
+                    </p>
                   )}
-                  {r.cuisine && (
-                    <span className="capitalize">· {r.cuisine}</span>
-                  )}
-                  {r.created_at && (
-                    <span
-                      className="ml-auto italic"
-                      title={formatAbsolute(r.created_at)}
-                      style={{ fontFamily: 'var(--font-display)' }}
-                    >
-                      added {formatRelativeTime(r.created_at)}
-                    </span>
-                  )}
+                  <div className="flex flex-wrap items-baseline gap-3 mt-auto pt-4 text-xs text-ink-muted">
+                    {r.total_time_min && (
+                      <span className="tnum">⏱ {r.total_time_min} min</span>
+                    )}
+                    {r.cuisine && (
+                      <span className="capitalize">· {r.cuisine}</span>
+                    )}
+                    {r.created_at && (
+                      <span
+                        className="ml-auto italic"
+                        title={formatAbsolute(r.created_at)}
+                        style={{ fontFamily: 'var(--font-display)' }}
+                      >
+                        {formatRelativeTime(r.created_at)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             </li>
@@ -260,6 +266,56 @@ function Header({ total, shown }) {
         </span>
       </h1>
     </header>
+  )
+}
+
+/**
+ * Thumbnail strip for a recipe card. Falls back to a stylized terracotta block
+ * with the recipe's first letter when no image exists or the image fails to load.
+ */
+function CardImage({ src, fallback, badge, index }) {
+  const [errored, setErrored] = useState(false)
+  const showImage = !!src && !errored
+  const initial = (fallback || '?').trim().charAt(0).toUpperCase() || '?'
+
+  return (
+    <div className="relative aspect-[16/10] w-full overflow-hidden bg-paper-deep">
+      {showImage ? (
+        <img
+          src={src}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setErrored(true)}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{
+            background:
+              'radial-gradient(circle at 30% 30%, #f2d8ce 0%, #ebe2d2 70%)',
+          }}
+        >
+          <span
+            className="font-display italic text-terracotta/70"
+            style={{
+              fontSize: '5rem',
+              lineHeight: 1,
+              fontVariationSettings: '"opsz" 144, "SOFT" 100',
+            }}
+          >
+            {initial}
+          </span>
+        </div>
+      )}
+      <div className="absolute top-3 left-3">
+        <span className="inline-flex items-center font-display italic text-paper-soft tnum text-xs px-2 py-1 rounded-full bg-ink/60 backdrop-blur-sm">
+          №{String(index).padStart(3, '0')}
+        </span>
+      </div>
+      {badge && <div className="absolute top-3 right-3">{badge}</div>}
+    </div>
   )
 }
 
