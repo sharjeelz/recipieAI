@@ -53,6 +53,13 @@ export const STATIONS = [
     via: 'SomaFM',
   },
   {
+    id: 'kitchenhustle',
+    label: 'Kitchen Hustle',
+    blurb: 'Adventurous jazz — the sound of a working kitchen.',
+    url: 'https://ice1.somafm.com/sonicuniverse-128-mp3',
+    via: 'SomaFM Sonic Universe',
+  },
+  {
     id: 'custom',
     label: 'Custom stream',
     blurb: 'Your own MP3 stream URL.',

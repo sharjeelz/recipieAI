@@ -88,6 +88,9 @@ class JobOut(BaseModel):
     status: str
     recipe_id: uuid.UUID | None
     error: str | None
+    title: str | None = None
+    thumbnail_url: str | None = None
+    source_url: str | None = None
     llm_input_tokens: int | None = None
     llm_output_tokens: int | None = None
     transcribe_seconds: float | None = None

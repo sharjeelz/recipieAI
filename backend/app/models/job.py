@@ -24,6 +24,8 @@ class Job(Base):
         Uuid, ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    title: Mapped[str | None] = mapped_column(String(500))
+    thumbnail_url: Mapped[str | None] = mapped_column(String(2048))
     status: Mapped[JobStatus] = mapped_column(
         Enum(JobStatus, name="job_status"), default=JobStatus.queued, nullable=False
     )

@@ -139,7 +139,19 @@ export default function ShoppingList() {
       {/* Lists */}
       {unchecked.length > 0 && (
         <section>
-          <p className="eyebrow mb-4">To gather</p>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <p className="eyebrow">To gather</p>
+            <a
+              href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+                unchecked.map((i) => i.item).join(', '),
+              )}`}
+              target="_blank"
+              rel="noreferrer"
+              className="link-grow inline-flex items-center gap-1.5 text-xs tracking-widest uppercase text-terracotta"
+            >
+              🔍 Find all online
+            </a>
+          </div>
           <ul className="border-t border-rule">
             {unchecked.map((it) => (
               <Row key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
@@ -189,10 +201,13 @@ export default function ShoppingList() {
 
 function Row({ item, onToggle, onDelete, muted }) {
   const isChecked = !!item.checked_at
+  const buyUrl = `https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
+    item.item,
+  )}`
   return (
     <li
       className={
-        'group flex items-center gap-5 py-4 border-b transition-opacity ' +
+        'group flex items-center gap-4 sm:gap-5 py-4 border-b transition-opacity ' +
         (muted ? 'border-rule-soft opacity-60' : 'border-rule')
       }
     >
@@ -216,6 +231,19 @@ function Row({ item, onToggle, onDelete, muted }) {
       >
         {item.item}
       </span>
+      {!isChecked && (
+        <a
+          href={buyUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Find ${item.item} online`}
+          title="Find this online"
+          className="opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex items-center gap-1.5 text-xs tracking-widest uppercase text-ink-muted hover:text-terracotta transition-all px-2.5 py-1 rounded-full border border-transparent hover:border-rule"
+        >
+          <span aria-hidden="true">🔍</span>
+          Find
+        </a>
+      )}
       <button
         onClick={() => onDelete(item)}
         className="opacity-0 group-hover:opacity-100 text-xs text-ink-muted hover:text-tomato transition-opacity px-2"

@@ -13,6 +13,7 @@ from app.services.llm.classifier import NotARecipeError
 from app.services.llm.pricing import llm_cost_usd
 from app.services.recipe_builder import build_recipe
 from app.services.recipe_store import persist_recipe
+from app.services.transcript.metadata import fetch_metadata
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +29,25 @@ async def process_job(job_id: uuid.UUID, video_url: str, settings: Settings) -> 
         if job is None:
             return
         owner_id = job.user_id
+
+    # Fetch and persist video metadata (title + thumbnail) up-front. This
+    # gives the JobStatus page something concrete to render within ~2s of the
+    # request, which dramatically reduces perceived wait. The pipeline will
+    # re-fetch internally; yt-dlp's metadata pass is cheap (~1s, no audio).
+    try:
+        meta = await fetch_metadata(video_url)
+        async with db_module.SessionLocal() as db:
+            job = (
+                await db.execute(select(Job).where(Job.id == job_id))
+            ).scalar_one_or_none()
+            if job is not None:
+                if meta.title:
+                    job.title = meta.title[:500]
+                if meta.thumbnail_url:
+                    job.thumbnail_url = meta.thumbnail_url
+                await db.commit()
+    except Exception:
+        log.exception("early metadata fetch failed for job %s — continuing", job_id)
 
     try:
         result = await build_recipe(video_url, settings)
