@@ -171,6 +171,7 @@ async def translate_recipe_endpoint(
         servings=recipe.servings,
         total_time_min=recipe.total_time_min,
         cuisine=recipe.cuisine,
+        kcal_per_serving=recipe.kcal_per_serving,
         ingredients=[
             LlmIngredient(quantity=i.quantity, unit=i.unit, item=i.item, notes=i.notes)
             for i in recipe.ingredients
@@ -209,6 +210,7 @@ def _translation_to_out(row: RecipeTranslation) -> TranslationOut:
         servings=payload.get("servings"),
         total_time_min=payload.get("total_time_min"),
         cuisine=payload.get("cuisine"),
+        kcal_per_serving=payload.get("kcal_per_serving"),
         ingredients=[
             {
                 "position": i,

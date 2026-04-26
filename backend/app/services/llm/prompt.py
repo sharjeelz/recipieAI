@@ -16,6 +16,10 @@ Rules:
   technique notes ("soak rice 30 min first"), substitutions, common mistakes to avoid,
   make-ahead / storage advice. Leave tips empty rather than inventing generic advice.
   Each tip must be a full, standalone sentence. At most 5 tips.
+- kcal_per_serving is your best estimate of energy per serving, in kilocalories,
+  derived from the ingredient list and quantities. It's an approximation, not a
+  lab measurement — round to the nearest 10. If servings is unknown, leave it null.
+  Account for typical absorption (e.g. only count the oil that ends up in the dish).
 """
 
 USER_TEMPLATE = """Source URL: {url}
@@ -34,13 +38,14 @@ Return the structured recipe."""
 RECIPE_SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["title", "ingredients", "steps", "tips"],
+    "required": ["title", "ingredients", "steps", "tips", "kcal_per_serving"],
     "properties": {
         "title": {"type": "string"},
         "summary": {"type": ["string", "null"]},
         "servings": {"type": ["integer", "null"]},
         "total_time_min": {"type": ["integer", "null"]},
         "cuisine": {"type": ["string", "null"]},
+        "kcal_per_serving": {"type": ["integer", "null"]},
         "ingredients": {
             "type": "array",
             "items": {

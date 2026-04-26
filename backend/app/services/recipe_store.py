@@ -28,6 +28,7 @@ async def persist_recipe(
         servings=structured.servings,
         total_time_min=structured.total_time_min,
         cuisine=structured.cuisine,
+        kcal_per_serving=structured.kcal_per_serving,
         tips=structured.tips or None,
         visibility=visibility,
         llm_provider=llm_provider,

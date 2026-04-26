@@ -22,6 +22,7 @@ class StructuredRecipe(BaseModel):
     servings: int | None = None
     total_time_min: int | None = None
     cuisine: str | None = None
+    kcal_per_serving: int | None = None
     ingredients: list[Ingredient]
     steps: list[Step]
     tips: list[str] = []

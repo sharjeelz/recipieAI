@@ -35,6 +35,7 @@ class RecipeOut(BaseModel):
     servings: int | None
     total_time_min: int | None
     cuisine: str | None
+    kcal_per_serving: int | None = None
     visibility: Visibility
     llm_provider: str | None
     llm_model: str | None = None
@@ -73,6 +74,7 @@ class RecipePatch(BaseModel):
     servings: int | None = None
     total_time_min: int | None = None
     cuisine: str | None = Field(default=None, max_length=100)
+    kcal_per_serving: int | None = None
     visibility: Visibility | None = None
 
 
@@ -106,6 +108,7 @@ class TranslationOut(BaseModel):
     servings: int | None = None
     total_time_min: int | None = None
     cuisine: str | None = None
+    kcal_per_serving: int | None = None
     ingredients: list[IngredientOut]
     steps: list[StepOut]
     tips: list[str] | None = None

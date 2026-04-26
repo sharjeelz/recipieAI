@@ -45,8 +45,9 @@ def _system(lang_name: str) -> str:
         "Translate: title, summary, ingredient item names, ingredient notes, and "
         "step text. Use natural, everyday language that a home cook would speak.\n\n"
         "Do NOT translate: numeric quantities ('200', '1/2', '3'), common unit "
-        "abbreviations (cup, tbsp, tsp, g, ml, oz, clove, pinch), or the cuisine "
-        "label (keep it as a lowercase English word like 'italian')."
+        "abbreviations (cup, tbsp, tsp, g, ml, oz, clove, pinch), kcal_per_serving "
+        "(copy the integer through unchanged), or the cuisine label (keep it as a "
+        "lowercase English word like 'italian')."
     )
 
 
