@@ -139,19 +139,7 @@ export default function ShoppingList() {
       {/* Lists */}
       {unchecked.length > 0 && (
         <section>
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <p className="eyebrow">To gather</p>
-            <a
-              href={`https://www.google.com/search?tbm=shop&q=${encodeURIComponent(
-                unchecked.map((i) => i.item).join(', '),
-              )}`}
-              target="_blank"
-              rel="noreferrer"
-              className="link-grow inline-flex items-center gap-1.5 text-xs tracking-widest uppercase text-terracotta"
-            >
-              🔍 Find all online
-            </a>
-          </div>
+          <p className="eyebrow mb-4">To gather</p>
           <ul className="border-t border-rule">
             {unchecked.map((it) => (
               <Row key={it.id} item={it} onToggle={onToggle} onDelete={onDelete} />
@@ -238,15 +226,15 @@ function Row({ item, onToggle, onDelete, muted }) {
           rel="noreferrer"
           aria-label={`Find ${item.item} online`}
           title="Find this online"
-          className="opacity-0 group-hover:opacity-100 focus:opacity-100 inline-flex items-center gap-1.5 text-xs tracking-widest uppercase text-ink-muted hover:text-terracotta transition-all px-2.5 py-1 rounded-full border border-transparent hover:border-rule"
+          className="shrink-0 inline-flex items-center gap-1.5 text-[11px] tracking-widest uppercase text-ink-muted hover:text-terracotta transition-colors px-2.5 py-1.5 rounded-full border border-rule hover:border-terracotta"
         >
           <span aria-hidden="true">🔍</span>
-          Find
+          <span className="hidden sm:inline">Find</span>
         </a>
       )}
       <button
         onClick={() => onDelete(item)}
-        className="opacity-0 group-hover:opacity-100 text-xs text-ink-muted hover:text-tomato transition-opacity px-2"
+        className="shrink-0 text-base text-ink-muted hover:text-tomato transition-colors px-2 leading-none"
         aria-label="Remove"
       >
         ✕
