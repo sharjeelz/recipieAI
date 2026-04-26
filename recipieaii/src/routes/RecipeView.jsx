@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Alert, Button, Spinner } from '../components/ui'
@@ -217,8 +217,94 @@ export default function RecipeView() {
       <div dir={active.dir} className="rise delay-2">
         <RecipeBody recipe={displayed} />
       </div>
+
+      {/* Personal notes — your tweaks, observations, what went wrong */}
+      <PersonalNotes recipeId={recipeId} initial={recipe.my_note ?? ''} />
     </div>
   )
+}
+
+function PersonalNotes({ recipeId, initial }) {
+  const [text, setText] = useState(initial)
+  const [savedText, setSavedText] = useState(initial)
+  const [status, setStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
+  const [savedAt, setSavedAt] = useState(null)
+  const debounceRef = useRef(null)
+  const controllerRef = useRef(null)
+  const errorRef = useRef(null)
+
+  // Save with debounce — fires 800ms after the user stops typing
+  useEffect(() => {
+    if (text === savedText) return
+    setStatus('saving')
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(async () => {
+      controllerRef.current?.abort?.()
+      try {
+        const r = await api.put(`/recipes/${recipeId}/note`, { note: text })
+        setSavedText(text)
+        setSavedAt(r.updated_at)
+        setStatus('saved')
+        errorRef.current = null
+      } catch (e) {
+        errorRef.current = e.message
+        setStatus('error')
+      }
+    }, 800)
+    return () => clearTimeout(debounceRef.current)
+  }, [text, savedText, recipeId])
+
+  // Fade "saved" indicator back to idle after 1.5s
+  useEffect(() => {
+    if (status !== 'saved') return
+    const t = setTimeout(() => setStatus('idle'), 1500)
+    return () => clearTimeout(t)
+  }, [status])
+
+  return (
+    <section className="border-t border-rule pt-10">
+      <div className="flex items-baseline gap-4 mb-5">
+        <span className="font-display italic text-ink-muted tnum">aside</span>
+        <span className="eyebrow">Your notes</span>
+        <span className="flex-1 h-px bg-rule" />
+        <NotesStatus status={status} message={errorRef.current} />
+      </div>
+
+      <div className="bg-paper-soft border border-rule-soft rounded-2xl px-5 py-4">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Doubled the garlic. Used coconut milk instead of cream. Needed 5 more minutes in the oven…"
+          rows={4}
+          className="w-full bg-transparent border-0 resize-y font-display text-[17px] leading-relaxed text-ink placeholder:text-ink-muted/55 placeholder:italic focus:outline-none"
+          maxLength={8000}
+          spellCheck={true}
+        />
+      </div>
+
+      <p className="text-xs text-ink-muted mt-3 leading-relaxed">
+        Only you can see these. They stay attached even if the recipe is shared
+        publicly.
+      </p>
+    </section>
+  )
+}
+
+function NotesStatus({ status, message }) {
+  if (status === 'saving') {
+    return <span className="eyebrow text-ink-muted">saving…</span>
+  }
+  if (status === 'saved') {
+    return <span className="eyebrow text-sage">✓ saved</span>
+  }
+  if (status === 'error') {
+    return (
+      <span className="eyebrow text-tomato" title={message}>
+        ! couldn't save
+      </span>
+    )
+  }
+  return null
 }
 
 /**

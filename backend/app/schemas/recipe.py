@@ -47,6 +47,7 @@ class RecipeOut(BaseModel):
     steps: list[StepOut]
     tips: list[str] | None = None
     available_translations: list[str] = []
+    my_note: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -118,3 +119,12 @@ class TranslationOut(BaseModel):
 class ShareOut(BaseModel):
     token: str
     url: str
+
+
+class NoteIn(BaseModel):
+    note: str = Field(default="", max_length=8000)
+
+
+class NoteOut(BaseModel):
+    note: str
+    updated_at: datetime

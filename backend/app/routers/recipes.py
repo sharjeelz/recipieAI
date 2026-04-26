@@ -8,9 +8,18 @@ from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DbSession, SettingsDep
 from app.models.job import Job, JobStatus
-from app.models.recipe import Recipe, RecipeTranslation, SavedRecipe, ShareToken, Visibility
+from app.models.recipe import (
+    Recipe,
+    RecipeNote,
+    RecipeTranslation,
+    SavedRecipe,
+    ShareToken,
+    Visibility,
+)
 from app.schemas.recipe import (
     CreateRecipeOut,
+    NoteIn,
+    NoteOut,
     RecipeCreate,
     RecipeOut,
     RecipePatch,
@@ -82,8 +91,17 @@ async def get_recipe(
             select(RecipeTranslation.language).where(RecipeTranslation.recipe_id == recipe_id)
         )
     ).scalars().all()
+    note_row = (
+        await db.execute(
+            select(RecipeNote.note).where(
+                RecipeNote.user_id == user.id,
+                RecipeNote.recipe_id == recipe_id,
+            )
+        )
+    ).scalar_one_or_none()
     out = RecipeOut.model_validate(recipe)
     out.available_translations = list(langs)
+    out.my_note = note_row
     return out
 
 
@@ -245,3 +263,44 @@ async def share_recipe(recipe_id: uuid.UUID, user: CurrentUser, db: DbSession) -
     db.add(ShareToken(token=token, recipe_id=recipe_id))
     await db.commit()
     return ShareOut(token=token, url=f"/share/{token}")
+
+
+@router.put("/{recipe_id}/note", response_model=NoteOut)
+async def upsert_note(
+    recipe_id: uuid.UUID, body: NoteIn, user: CurrentUser, db: DbSession
+) -> NoteOut:
+    """Create/update the current user's note for this recipe. Empty string
+    deletes the row so the column doesn't accumulate empties."""
+    recipe = (
+        await db.execute(select(Recipe).where(Recipe.id == recipe_id))
+    ).scalar_one_or_none()
+    if recipe is None or not _can_view(recipe, user.id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "recipe not found")
+
+    existing = (
+        await db.execute(
+            select(RecipeNote).where(
+                RecipeNote.user_id == user.id,
+                RecipeNote.recipe_id == recipe_id,
+            )
+        )
+    ).scalar_one_or_none()
+
+    text = body.note.strip()
+
+    if not text:
+        if existing is not None:
+            await db.delete(existing)
+            await db.commit()
+        from datetime import datetime, timezone
+        return NoteOut(note="", updated_at=datetime.now(timezone.utc))
+
+    if existing is None:
+        existing = RecipeNote(user_id=user.id, recipe_id=recipe_id, note=text)
+        db.add(existing)
+    else:
+        existing.note = text
+
+    await db.commit()
+    await db.refresh(existing)
+    return NoteOut(note=existing.note, updated_at=existing.updated_at)

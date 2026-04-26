@@ -132,6 +132,27 @@ class RecipeTranslation(Base):
     )
 
 
+class RecipeNote(Base):
+    __tablename__ = "recipe_notes"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    recipe_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("recipes.id", ondelete="CASCADE"), primary_key=True
+    )
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
 class ShareToken(Base):
     __tablename__ = "share_tokens"
 
