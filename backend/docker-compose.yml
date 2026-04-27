@@ -45,7 +45,8 @@ services:
       YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
-      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
+      # writable so yt-dlp can refresh the cookie jar in-place
+      - ./youtube_cookies.txt:/cookies/youtube.txt
 
   worker:
     build: .
@@ -60,7 +61,8 @@ services:
       YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
-      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
+      # writable so yt-dlp can refresh the cookie jar in-place
+      - ./youtube_cookies.txt:/cookies/youtube.txt
 
 volumes:
   pgdata:
