@@ -21,7 +21,7 @@ dependencies = [
     "httpx>=0.27",
     "anthropic>=0.39",
     "openai>=1.54",
-    "yt-dlp>=2024.11.18",
+    "yt-dlp>=2025.4.30",
     "youtube-transcript-api>=0.6.3",
 ]
 

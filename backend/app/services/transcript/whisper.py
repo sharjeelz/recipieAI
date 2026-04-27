@@ -22,16 +22,22 @@ def _download_audio(video_url: str, out_dir: Path) -> tuple[Path, float | None]:
     except ImportError as e:
         raise TranscriptionError("yt-dlp not installed") from e
 
+    from app.services.transcript.ytdlp_opts import build_opts
+
     out_tmpl = str(out_dir / "audio.%(ext)s")
-    opts = {
-        "format": "bestaudio/best",
-        "outtmpl": out_tmpl,
-        "quiet": True,
-        "no_warnings": True,
-        "postprocessors": [
-            {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "128"}
-        ],
-    }
+    opts = build_opts(
+        extra={
+            "format": "bestaudio/best",
+            "outtmpl": out_tmpl,
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                    "preferredquality": "128",
+                }
+            ],
+        }
+    )
     with yt_dlp.YoutubeDL(opts) as ydl:
         info = ydl.extract_info(video_url, download=True)
     duration = None

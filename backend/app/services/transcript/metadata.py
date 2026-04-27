@@ -48,7 +48,9 @@ def _fetch_sync(video_url: str) -> VideoMetadata:
     except ImportError:
         return VideoMetadata(None, None, None)
 
-    opts = {"quiet": True, "no_warnings": True, "skip_download": True}
+    from app.services.transcript.ytdlp_opts import build_opts
+
+    opts = build_opts(extra={"skip_download": True})
     try:
         with yt_dlp.YoutubeDL(opts) as ydl:
             info = ydl.extract_info(video_url, download=False)

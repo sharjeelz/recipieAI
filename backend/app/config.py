@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     whisper_backend: Literal["openai", "local"] = "openai"
     whisper_local_model: str = "base"
 
+    # Optional: path to a Netscape-format cookies file. Mount it into the
+    # api/worker containers and set this to bypass YouTube's "sign in to
+    # confirm you're not a bot" check on data-center IPs.
+    yt_dlp_cookies_file: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
