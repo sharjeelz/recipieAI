@@ -36,8 +36,16 @@ services:
     ports:
       - "8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment:
+      # The yt-dlp helper reads this; if the mounted file is empty (the
+      # default placeholder), yt-dlp simply finds no useful cookies. To
+      # bypass YouTube's bot check on data-center IPs, replace
+      # backend/youtube_cookies.txt with a real export from a logged-in
+      # browser session. See DEPLOY.md.
+      YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
+      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
 
   worker:
     build: .
@@ -48,8 +56,11 @@ services:
       redis:
         condition: service_healthy
     command: ["arq", "app.workers.tasks.WorkerSettings"]
+    environment:
+      YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
+      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
 
 volumes:
   pgdata:

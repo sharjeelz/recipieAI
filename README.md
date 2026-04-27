@@ -68,7 +68,10 @@ The job runs async in an ARQ worker (Redis-backed) so the HTTP request returns i
 ```bash
 cd backend
 cp .env.example .env
+cp youtube_cookies.txt.example youtube_cookies.txt
 ```
+
+The cookies file is a placeholder for dev. In production you replace it with a real export — see `DEPLOY.md` "YouTube cookies file" section.
 
 Edit `.env`:
 

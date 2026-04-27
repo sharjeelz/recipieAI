@@ -4,6 +4,9 @@
 **/.env.*.local
 !**/.env.example
 
+# real YouTube cookies file — exported from a logged-in browser, do not commit
+backend/youtube_cookies.txt
+
 # python
 __pycache__/
 *.py[cod]

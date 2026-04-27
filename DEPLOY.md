@@ -113,6 +113,27 @@ WHISPER_BACKEND=openai
 
 > **Hardening note:** the default Postgres password (`recipyai/recipyai`) is fine because the DB only listens on the docker network — but if you map port 5432 to the host for any reason, change it.
 
+### YouTube cookies file (required on data-center IPs)
+
+YouTube blocks requests from data-center IPs (AWS / GCP / Hetzner / etc.) with "Sign in to confirm you're not a bot." To bypass, mount cookies from a logged-in browser session.
+
+The repo ships a placeholder at `backend/youtube_cookies.txt.example`. The compose file mounts `backend/youtube_cookies.txt` (gitignored), so you need to put the real file in place before the first `docker compose up`.
+
+**On your laptop**, install **"Get cookies.txt LOCALLY"** (Chrome / Firefox extension), open https://www.youtube.com while logged in (a throwaway Google account is safer), click the extension, and **Export** → it downloads `youtube.com_cookies.txt`.
+
+**Upload to the server** (FileZilla, scp, or any SFTP client) into `/opt/recipyai/backend/youtube_cookies.txt`. Then on the server:
+
+```bash
+cd /opt/recipyai/backend
+# If the upload landed as a different name, rename it:
+# mv www.youtube.com_cookies.txt youtube_cookies.txt
+chmod 600 youtube_cookies.txt
+```
+
+**If you skip this step**, the placeholder file is mounted instead — yt-dlp finds no useful cookies, and YouTube extraction will fail on a data-center IP with the bot-check error. (TikTok and Reels still work.)
+
+The cookies expire when you log out / change password / etc. — if extraction starts failing again in a few weeks, re-export from your browser and replace the file.
+
 ## 4. Tighten `docker-compose.yml` for production
 
 Open `backend/docker-compose.yml` and make three small changes:

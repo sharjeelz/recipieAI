@@ -1,0 +1,9 @@
+# Netscape HTTP Cookie File
+# This is a placeholder. yt-dlp will find no useful cookies here, which
+# is fine for development on a residential IP.
+#
+# In production (on a data-center IP like AWS/GCP), YouTube blocks
+# requests with "Sign in to confirm you're not a bot." To bypass that,
+# replace this file with a real cookies export from a logged-in
+# browser session. See DEPLOY.md section "YouTube cookies file" for
+# step-by-step instructions.
