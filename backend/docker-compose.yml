@@ -45,8 +45,9 @@ services:
       YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
-      # writable so yt-dlp can refresh the cookie jar in-place
-      - ./youtube_cookies.txt:/cookies/youtube.txt
+      # mounted read-only — the helper copies to /tmp before passing to
+      # yt-dlp, so yt-dlp's cookie-jar writeback doesn't clobber the source
+      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
 
   worker:
     build: .
@@ -61,8 +62,9 @@ services:
       YT_DLP_COOKIES_FILE: /cookies/youtube.txt
     volumes:
       - ./:/app
-      # writable so yt-dlp can refresh the cookie jar in-place
-      - ./youtube_cookies.txt:/cookies/youtube.txt
+      # mounted read-only — the helper copies to /tmp before passing to
+      # yt-dlp, so yt-dlp's cookie-jar writeback doesn't clobber the source
+      - ./youtube_cookies.txt:/cookies/youtube.txt:ro
 
 volumes:
   pgdata:
