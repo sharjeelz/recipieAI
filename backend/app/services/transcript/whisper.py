@@ -27,7 +27,10 @@ def _download_audio(video_url: str, out_dir: Path) -> tuple[Path, float | None]:
     out_tmpl = str(out_dir / "audio.%(ext)s")
     opts = build_opts(
         extra={
-            "format": "bestaudio/best",
+            # Prefer m4a/webm audio-only, then any audio, then any single
+            # stream — last resort lets yt-dlp pick the lowest-friction
+            # format when format detection is partial.
+            "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
             "outtmpl": out_tmpl,
             "postprocessors": [
                 {
