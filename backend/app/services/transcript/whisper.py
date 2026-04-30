@@ -27,10 +27,13 @@ def _download_audio(video_url: str, out_dir: Path) -> tuple[Path, float | None]:
     out_tmpl = str(out_dir / "audio.%(ext)s")
     opts = build_opts(
         extra={
-            # Prefer m4a/webm audio-only, then any audio, then any single
-            # stream — last resort lets yt-dlp pick the lowest-friction
-            # format when format detection is partial.
-            "format": "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio/best",
+            # Permissive selector. mweb/tv-class clients (used to bypass
+            # the YouTube bot check) often return HLS-only or merged-only
+            # manifests with no audio-only stream — `bestaudio` resolves
+            # to nothing in that case. Asking for any best+best combo
+            # (audio-only OR merged OR single-file) and then letting
+            # FFmpegExtractAudio strip out the audio works regardless.
+            "format": "bestaudio/bv*+ba/b/worst",
             "outtmpl": out_tmpl,
             "postprocessors": [
                 {
