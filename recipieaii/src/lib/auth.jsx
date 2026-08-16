@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { api, clearTokens, getTokens, onTokensChange, setTokens } from './api'
+import { clearApiCache } from './pwa'
 
 const AuthContext = createContext(null)
 
@@ -61,6 +62,9 @@ export function AuthProvider({ children }) {
       // ignore — we're clearing local state regardless
     }
     clearTokens()
+    // Offline copies of recipes outlive the token — drop them too, so a
+    // shared device doesn't stay readable after signing out.
+    clearApiCache()
     setUser(null)
   }
 
