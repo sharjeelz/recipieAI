@@ -122,3 +122,18 @@ async def auth_headers(client, creds) -> dict[str, str]:
     r = await client.post("/auth/register", json=creds)
     assert r.status_code == 201
     return {"Authorization": f"Bearer {r.json()['access_token']}"}
+
+
+@pytest_asyncio.fixture
+async def second_auth_headers(client) -> dict[str, str]:
+    """A second, unrelated account — for asserting per-user isolation."""
+    r = await client.post(
+        "/auth/register",
+        json={
+            "email": "other@example.com",
+            "password": "hunter2hunter2",
+            "display_name": "Other",
+        },
+    )
+    assert r.status_code == 201
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}

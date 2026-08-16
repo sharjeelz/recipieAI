@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Card, SectionLabel } from '../components/ui'
+import { Button, Card, SectionLabel, Spinner } from '../components/ui'
+import { api } from '../lib/api'
 import {
   STATIONS,
   loadMusicPrefs,
@@ -231,6 +232,126 @@ export default function Settings() {
           </p>
         </div>
       </section>
+
+      <SpendSection />
+    </div>
+  )
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   What the archive has cost — every extraction and translation runs
+   paid LLM/transcription calls, and until now nothing surfaced it.
+   ────────────────────────────────────────────────────────────────── */
+
+function money(usd) {
+  if (usd == null) return '—'
+  if (usd === 0) return '$0.00'
+  // Sub-cent totals are normal early on; $0.00 would read as "free".
+  if (usd < 0.01) return `<$0.01`
+  return `$${usd.toFixed(2)}`
+}
+
+function preciseMoney(usd) {
+  if (usd == null) return '—'
+  return `$${usd.toFixed(4)}`
+}
+
+function duration(seconds) {
+  if (!seconds) return '0m'
+  const m = Math.round(seconds / 60)
+  if (m < 60) return `${m}m`
+  return `${Math.floor(m / 60)}h ${m % 60}m`
+}
+
+function SpendSection() {
+  const [stats, setStats] = useState(null)
+  const [err, setErr] = useState(null)
+
+  useEffect(() => {
+    api
+      .get('/stats')
+      .then(setStats)
+      .catch((e) => setErr(e.message || 'Could not load usage'))
+  }, [])
+
+  return (
+    <section className="space-y-6">
+      <SectionLabel number="03">What it's cost</SectionLabel>
+
+      <p className="font-display italic text-ink-soft text-lg max-w-2xl">
+        Every extraction runs transcription and a language model. Here's the
+        running tab.
+      </p>
+
+      {err ? (
+        <p className="text-sm text-ink-muted">{err}</p>
+      ) : !stats ? (
+        <Spinner label="Totting up…" />
+      ) : (
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Stat label="All time" value={money(stats.spend_usd.total)} />
+            <Stat label="This month" value={money(stats.spend_usd.this_month)} />
+            <Stat
+              label="Per recipe"
+              value={
+                stats.spend_usd.per_recipe == null
+                  ? '—'
+                  : preciseMoney(stats.spend_usd.per_recipe)
+              }
+            />
+            <Stat label="Recipes" value={stats.recipes} />
+          </div>
+
+          <Card className="space-y-2.5">
+            <Row label="Extractions" value={preciseMoney(stats.spend_usd.extraction)} />
+            <Row label="Translations" value={preciseMoney(stats.spend_usd.translation)} />
+            {stats.jobs.failed > 0 && (
+              <Row
+                label={`Spent on ${stats.jobs.failed} failed ${
+                  stats.jobs.failed === 1 ? 'extraction' : 'extractions'
+                }`}
+                value={preciseMoney(stats.spend_usd.wasted)}
+                muted
+              />
+            )}
+            <div className="border-t border-rule pt-2.5 space-y-2.5">
+              <Row
+                label="Tokens in / out"
+                value={`${stats.tokens.input.toLocaleString()} / ${stats.tokens.output.toLocaleString()}`}
+              />
+              <Row label="Audio transcribed" value={duration(stats.transcribe_seconds)} />
+              <Row label="Translations made" value={stats.translations} />
+            </div>
+          </Card>
+        </>
+      )}
+    </section>
+  )
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-rule-soft bg-paper-soft/60 p-4">
+      <span className="eyebrow block text-ink-muted mb-1.5">{label}</span>
+      <span className="font-display text-2xl tnum leading-none">{value}</span>
+    </div>
+  )
+}
+
+function Row({ label, value, muted = false }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <span className={'text-sm ' + (muted ? 'text-ink-muted' : 'text-ink-soft')}>
+        {label}
+      </span>
+      <span
+        className={
+          'font-display tnum text-sm ' + (muted ? 'text-ink-muted' : 'text-ink')
+        }
+      >
+        {value}
+      </span>
     </div>
   )
 }
