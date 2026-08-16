@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Alert, Button, SectionLabel, Spinner } from '../components/ui'
 
@@ -211,6 +211,7 @@ export default function Research() {
 function ResultCard({ result, busy, disabled, onScrape }) {
   const duration = formatDuration(result.duration_seconds)
   const views = formatViews(result.view_count)
+  const existingId = result.existing_recipe_id
 
   return (
     <li className="group border border-rule rounded-lg overflow-hidden flex flex-col bg-paper">
@@ -238,6 +239,11 @@ function ResultCard({ result, busy, disabled, onScrape }) {
             {duration}
           </span>
         )}
+        {existingId && (
+          <span className="absolute top-2 left-2 text-[10px] tracking-widest uppercase bg-sage text-paper px-2 py-1 rounded-full">
+            ✓ In library
+          </span>
+        )}
       </a>
 
       <div className="p-4 flex flex-col gap-2 flex-1">
@@ -255,15 +261,36 @@ function ResultCard({ result, busy, disabled, onScrape }) {
           >
             Watch ↗
           </a>
-          <Button
-            type="button"
-            variant="accent"
-            onClick={onScrape}
-            disabled={disabled}
-            className="shrink-0"
-          >
-            {busy ? 'Starting…' : 'Scrape →'}
-          </Button>
+          {existingId ? (
+            // Already extracted — offer the recipe, but keep re-scraping
+            // available for when an extraction came out badly.
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={onScrape}
+                disabled={disabled}
+                className="text-xs text-ink-muted hover:text-terracotta tracking-wide disabled:opacity-50"
+              >
+                {busy ? 'Starting…' : 'Re-scrape'}
+              </button>
+              <Link
+                to={`/app/recipes/${existingId}`}
+                className="inline-flex items-center px-3 py-1.5 text-sm border border-ink rounded-full hover:bg-ink hover:text-paper transition-colors"
+              >
+                Open →
+              </Link>
+            </div>
+          ) : (
+            <Button
+              type="button"
+              variant="accent"
+              onClick={onScrape}
+              disabled={disabled}
+              className="shrink-0"
+            >
+              {busy ? 'Starting…' : 'Scrape →'}
+            </Button>
+          )}
         </div>
       </div>
     </li>

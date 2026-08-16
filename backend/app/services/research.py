@@ -9,9 +9,50 @@ round trip instead of 12 challenge-solving ones.
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass, asdict
+from urllib.parse import parse_qs, urlparse
 
 MAX_RESULTS = 24
+
+# Paths that carry the video id as the last segment rather than as ?v=.
+_PATH_ID_PREFIXES = ("/shorts/", "/embed/", "/v/", "/live/")
+_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+
+
+def youtube_video_id(url: str | None) -> str | None:
+    """Extract the 11-char video id from any of YouTube's URL shapes.
+
+    Recipes store whatever URL the user pasted — watch?v=, youtu.be/,
+    /shorts/, with or without playlist and tracking params. Comparing raw
+    URLs would miss those, so we compare ids instead.
+    """
+    if not url:
+        return None
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return None
+
+    host = (parsed.hostname or "").lower().removeprefix("www.")
+    if host == "youtu.be":
+        candidate = parsed.path.lstrip("/").split("/", 1)[0]
+        return candidate if _VIDEO_ID_RE.match(candidate) else None
+
+    if host not in {"youtube.com", "m.youtube.com", "music.youtube.com"}:
+        return None
+
+    if parsed.path == "/watch":
+        values = parse_qs(parsed.query).get("v") or []
+        candidate = values[0] if values else ""
+        return candidate if _VIDEO_ID_RE.match(candidate) else None
+
+    for prefix in _PATH_ID_PREFIXES:
+        if parsed.path.startswith(prefix):
+            candidate = parsed.path[len(prefix):].split("/", 1)[0]
+            return candidate if _VIDEO_ID_RE.match(candidate) else None
+
+    return None
 
 
 @dataclass
