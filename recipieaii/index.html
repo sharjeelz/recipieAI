@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      SomaFM (our cook-mode music streams) hotlink-protects its Icecast
+      endpoints: any request carrying a Referer header gets a 403, which
+      surfaces in the browser as MEDIA_ERR_SRC_NOT_SUPPORTED and a silent
+      player. Chrome ignores the `referrerpolicy` attribute on media
+      elements, so the policy has to be set page-wide here. Nothing else we
+      load depends on sending a referrer (fonts, our own API, thumbnails).
+    -->
+    <meta name="referrer" content="no-referrer" />
     <meta name="theme-color" content="#F4EFE6" />
     <title>RecipyAI — The cook's archive, distilled</title>
 

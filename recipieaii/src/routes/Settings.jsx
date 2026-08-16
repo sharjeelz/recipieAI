@@ -4,12 +4,12 @@ import {
   STATIONS,
   loadMusicPrefs,
   saveMusicPrefs,
-  resolveStreamUrl,
 } from '../lib/music'
 
 export default function Settings() {
   const [prefs, setPrefs] = useState(loadMusicPrefs())
   const [previewing, setPreviewing] = useState(null) // station id currently playing
+  const [previewError, setPreviewError] = useState(null) // station id that failed
   const [saved, setSaved] = useState(false)
   const audioRef = useRef(null)
 
@@ -46,6 +46,7 @@ export default function Settings() {
     audioRef.current?.pause()
     audioRef.current = null
     setPreviewing(null)
+    setPreviewError(null)
 
     const url =
       station.id === 'custom'
@@ -59,8 +60,10 @@ export default function Settings() {
     a.play()
       .then(() => setPreviewing(station.id))
       .catch(() => {
-        // Some browsers block autoplay; stream URL might be blocked.
+        // Autoplay blocked, stream offline, or the host refused the
+        // request. Say so — a silently dead button is undebuggable.
         setPreviewing(null)
+        setPreviewError(station.id)
       })
   }
 
@@ -68,6 +71,7 @@ export default function Settings() {
     audioRef.current?.pause()
     audioRef.current = null
     setPreviewing(null)
+    setPreviewError(null)
   }
 
   return (
@@ -159,6 +163,11 @@ export default function Settings() {
                     >
                       {isPreviewing ? '■ Stop preview' : '▶ Preview'}
                     </button>
+                  )}
+                  {previewError === s.id && (
+                    <p className="mt-2 text-xs text-terracotta">
+                      Couldn't reach this stream.
+                    </p>
                   )}
                 </label>
               </li>
