@@ -49,6 +49,9 @@ class RecipeOut(BaseModel):
     tips: list[str] | None = None
     available_translations: list[str] = []
     my_note: str | None = None
+    my_rating: int | None = None
+    my_cooked_count: int = 0
+    my_last_cooked_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -63,6 +66,8 @@ class RecipeSummary(BaseModel):
     cuisine: str | None
     thumbnail_url: str | None = None
     visibility: Visibility
+    my_rating: int | None = None
+    my_cooked_count: int = 0
     created_at: datetime
 
 
@@ -141,3 +146,14 @@ class NoteIn(BaseModel):
 class NoteOut(BaseModel):
     note: str
     updated_at: datetime
+
+
+class RatingIn(BaseModel):
+    # null clears the rating without touching the cook count.
+    rating: int | None = Field(default=None, ge=1, le=5)
+
+
+class RatingOut(BaseModel):
+    rating: int | None = None
+    cooked_count: int = 0
+    last_cooked_at: datetime | None = None

@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
@@ -11,6 +12,7 @@ from app.models.job import Job, JobStatus
 from app.models.recipe import (
     Recipe,
     RecipeNote,
+    RecipeRating,
     RecipeTranslation,
     SavedRecipe,
     ShareToken,
@@ -22,6 +24,8 @@ from app.schemas.recipe import (
     DiscoverRecipe,
     NoteIn,
     NoteOut,
+    RatingIn,
+    RatingOut,
     RecipeCreate,
     RecipeOut,
     RecipePatch,
@@ -70,13 +74,29 @@ async def create_recipe(
 
 
 @router.get("/mine", response_model=list[RecipeSummary])
-async def list_mine(user: CurrentUser, db: DbSession) -> list[Recipe]:
+async def list_mine(user: CurrentUser, db: DbSession) -> list[RecipeSummary]:
     rows = (
         await db.execute(
-            select(Recipe).where(Recipe.owner_id == user.id).order_by(Recipe.created_at.desc())
+            select(Recipe, RecipeRating)
+            .join(
+                RecipeRating,
+                (RecipeRating.recipe_id == Recipe.id)
+                & (RecipeRating.user_id == user.id),
+                isouter=True,
+            )
+            .where(Recipe.owner_id == user.id)
+            .order_by(Recipe.created_at.desc())
         )
-    ).scalars().all()
-    return list(rows)
+    ).all()
+
+    out = []
+    for recipe, rating in rows:
+        item = RecipeSummary.model_validate(recipe)
+        if rating is not None:
+            item.my_rating = rating.rating
+            item.my_cooked_count = rating.cooked_count
+        out.append(item)
+    return out
 
 
 # NOTE: /public and /saved must be declared before /{recipe_id} — FastAPI
@@ -173,9 +193,22 @@ async def get_recipe(
             )
         )
     ).scalar_one_or_none()
+    rating_row = (
+        await db.execute(
+            select(RecipeRating).where(
+                RecipeRating.user_id == user.id,
+                RecipeRating.recipe_id == recipe_id,
+            )
+        )
+    ).scalar_one_or_none()
+
     out = RecipeOut.model_validate(recipe)
     out.available_translations = list(langs)
     out.my_note = note_row
+    if rating_row is not None:
+        out.my_rating = rating_row.rating
+        out.my_cooked_count = rating_row.cooked_count
+        out.my_last_cooked_at = rating_row.last_cooked_at
     return out
 
 
@@ -238,6 +271,68 @@ async def unsave_recipe(recipe_id: uuid.UUID, user: CurrentUser, db: DbSession) 
         return
     await db.delete(row)
     await db.commit()
+
+
+async def _get_or_create_rating(db, user_id, recipe_id) -> RecipeRating:
+    row = (
+        await db.execute(
+            select(RecipeRating).where(
+                RecipeRating.user_id == user_id,
+                RecipeRating.recipe_id == recipe_id,
+            )
+        )
+    ).scalar_one_or_none()
+    if row is None:
+        row = RecipeRating(user_id=user_id, recipe_id=recipe_id, cooked_count=0)
+        db.add(row)
+    return row
+
+
+@router.put("/{recipe_id}/rating", response_model=RatingOut)
+async def set_rating(
+    recipe_id: uuid.UUID, body: RatingIn, user: CurrentUser, db: DbSession
+) -> RatingOut:
+    """Set or clear your rating. Never touches the cook count — the two are
+    independent judgements about the same recipe."""
+    recipe = (
+        await db.execute(select(Recipe).where(Recipe.id == recipe_id))
+    ).scalar_one_or_none()
+    if recipe is None or not _can_view(recipe, user.id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "recipe not found")
+
+    row = await _get_or_create_rating(db, user.id, recipe_id)
+    row.rating = body.rating
+    await db.commit()
+    await db.refresh(row)
+    return RatingOut(
+        rating=row.rating,
+        cooked_count=row.cooked_count,
+        last_cooked_at=row.last_cooked_at,
+    )
+
+
+@router.post("/{recipe_id}/cooked", response_model=RatingOut)
+async def log_cooked(
+    recipe_id: uuid.UUID, user: CurrentUser, db: DbSession
+) -> RatingOut:
+    """Record that you cooked this, now. Increments rather than sets, so the
+    count survives repeat cooking without the client tracking anything."""
+    recipe = (
+        await db.execute(select(Recipe).where(Recipe.id == recipe_id))
+    ).scalar_one_or_none()
+    if recipe is None or not _can_view(recipe, user.id):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "recipe not found")
+
+    row = await _get_or_create_rating(db, user.id, recipe_id)
+    row.cooked_count = (row.cooked_count or 0) + 1
+    row.last_cooked_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(row)
+    return RatingOut(
+        rating=row.rating,
+        cooked_count=row.cooked_count,
+        last_cooked_at=row.last_cooked_at,
+    )
 
 
 @router.post("/{recipe_id}/translate", response_model=TranslationOut)

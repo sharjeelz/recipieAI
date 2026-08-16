@@ -9,6 +9,8 @@ const SORTS = [
   { id: 'oldest', label: 'Oldest' },
   { id: 'a-z', label: 'A → Z' },
   { id: 'time', label: 'Quickest' },
+  { id: 'best', label: 'Best rated' },
+  { id: 'most-cooked', label: 'Most cooked' },
 ]
 
 export default function Library() {
@@ -60,6 +62,15 @@ export default function Library() {
           return (a.title || '').localeCompare(b.title || '')
         case 'time':
           return (a.total_time_min ?? 9e9) - (b.total_time_min ?? 9e9)
+        case 'best':
+          // Unrated sinks below 1-star rather than sorting as 0; ties break
+          // on how often you've actually cooked it.
+          return (
+            (b.my_rating ?? -1) - (a.my_rating ?? -1) ||
+            (b.my_cooked_count ?? 0) - (a.my_cooked_count ?? 0)
+          )
+        case 'most-cooked':
+          return (b.my_cooked_count ?? 0) - (a.my_cooked_count ?? 0)
         case 'newest':
         default:
           return new Date(b.created_at) - new Date(a.created_at)
@@ -216,6 +227,17 @@ export default function Library() {
                     </p>
                   )}
                   <div className="flex flex-wrap items-baseline gap-3 mt-auto pt-4 text-xs text-ink-muted">
+                    {r.my_rating != null && (
+                      <span className="text-saffron tracking-tight" title={`${r.my_rating}/5`}>
+                        {'★'.repeat(r.my_rating)}
+                        <span className="text-rule">{'★'.repeat(5 - r.my_rating)}</span>
+                      </span>
+                    )}
+                    {r.my_cooked_count > 0 && (
+                      <span className="tnum" title="Times you've cooked this">
+                        🍳 {r.my_cooked_count}
+                      </span>
+                    )}
                     {r.total_time_min && (
                       <span className="tnum">⏱ {r.total_time_min} min</span>
                     )}

@@ -2,6 +2,20 @@ import { useState } from 'react'
 import { scaleQuantity } from '../lib/quantity'
 import { Pill } from './ui'
 
+/** Name the platform in the link text — "Watch on YouTube" tells you what
+ *  you're about to open in a way "Source video" doesn't. */
+function sourceName(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, '')
+    if (host.endsWith('youtube.com') || host === 'youtu.be') return 'YouTube'
+    if (host.endsWith('tiktok.com')) return 'TikTok'
+    if (host.endsWith('instagram.com')) return 'Instagram'
+    return host
+  } catch {
+    return 'the source'
+  }
+}
+
 export default function RecipeBody({ recipe }) {
   const baseServings = recipe.servings || null
   const [servings, setServings] = useState(baseServings)
@@ -87,7 +101,7 @@ export default function RecipeBody({ recipe }) {
             rel="noreferrer"
             className="link-grow inline-flex items-center gap-2 mt-6 text-sm text-terracotta tracking-wide"
           >
-            Source video ↗
+            Watch on {sourceName(recipe.source_url)} ↗
           </a>
         )}
       </header>

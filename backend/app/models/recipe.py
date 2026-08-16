@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     JSON,
+    CheckConstraint,
     DateTime,
     Enum,
     Float,
@@ -143,6 +144,46 @@ class RecipeNote(Base):
         Uuid, ForeignKey("recipes.id", ondelete="CASCADE"), primary_key=True
     )
     note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+class RecipeRating(Base):
+    """Per-user verdict on a recipe.
+
+    Rating and cook count are deliberately in one row: "I made this twice
+    and it was a 5" is one judgement, and keeping them together means the
+    library can rank by "good AND actually cooked" without a second join.
+    Either half can exist without the other — you can log a cook before
+    deciding what you think, or rate from the page without cooking today.
+    """
+
+    __tablename__ = "recipe_ratings"
+    # Mirrors the constraint in migration 0011 — keep the two in step, or
+    # tests (which build the schema from this metadata) stop covering it.
+    __table_args__ = (
+        CheckConstraint(
+            "rating IS NULL OR (rating >= 1 AND rating <= 5)",
+            name="ck_recipe_ratings_range",
+        ),
+    )
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    recipe_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("recipes.id", ondelete="CASCADE"), primary_key=True
+    )
+    rating: Mapped[int | None] = mapped_column(Integer)
+    cooked_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    last_cooked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

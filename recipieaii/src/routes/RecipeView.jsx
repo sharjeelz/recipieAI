@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { Alert, Button, Spinner } from '../components/ui'
 import RecipeBody from '../components/RecipeBody'
+import { formatRelativeTime } from '../lib/relativeTime'
 
 const LANGUAGES = [
   { code: 'en', label: 'English', dir: 'ltr' },
@@ -250,9 +251,114 @@ export default function RecipeView() {
         <RecipeBody recipe={displayed} />
       </div>
 
+      {/* Your verdict — was it any good, and did you actually make it */}
+      <Verdict
+        recipeId={recipeId}
+        rating={recipe.my_rating ?? null}
+        cookedCount={recipe.my_cooked_count ?? 0}
+        lastCookedAt={recipe.my_last_cooked_at ?? null}
+      />
+
       {/* Personal notes — your tweaks, observations, what went wrong */}
       <PersonalNotes recipeId={recipeId} initial={recipe.my_note ?? ''} />
     </div>
+  )
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   Verdict — the feedback loop the archive was missing. Without it you
+   accumulate recipes with no way to tell the keepers from the duds.
+   ────────────────────────────────────────────────────────────────── */
+
+function Verdict({ recipeId, rating, cookedCount, lastCookedAt }) {
+  const [stars, setStars] = useState(rating)
+  const [hover, setHover] = useState(null)
+  const [count, setCount] = useState(cookedCount)
+  const [last, setLast] = useState(lastCookedAt)
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState(null)
+
+  async function rate(value) {
+    // Clicking the current rating clears it — no separate "unrate" control.
+    const next = value === stars ? null : value
+    const prev = stars
+    setStars(next)
+    setErr(null)
+    try {
+      await api.put(`/recipes/${recipeId}/rating`, { rating: next })
+    } catch (e) {
+      setStars(prev)
+      setErr(e.message || 'Could not save rating')
+    }
+  }
+
+  async function logCooked() {
+    setBusy(true)
+    setErr(null)
+    try {
+      const res = await api.post(`/recipes/${recipeId}/cooked`)
+      setCount(res.cooked_count)
+      setLast(res.last_cooked_at)
+    } catch (e) {
+      setErr(e.message || 'Could not log that')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const shown = hover ?? stars
+
+  return (
+    <section className="no-print border-t border-rule pt-8">
+      <div className="flex flex-wrap items-center justify-between gap-6">
+        <div>
+          <span className="eyebrow block mb-2">Your verdict</span>
+          <div
+            className="flex items-center gap-1"
+            onMouseLeave={() => setHover(null)}
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => rate(n)}
+                onMouseEnter={() => setHover(n)}
+                aria-label={`${n} star${n === 1 ? '' : 's'}`}
+                aria-pressed={stars === n}
+                className={
+                  'text-2xl leading-none transition-colors ' +
+                  (shown != null && n <= shown
+                    ? 'text-saffron'
+                    : 'text-rule hover:text-ink-muted')
+                }
+              >
+                ★
+              </button>
+            ))}
+            <span className="ml-3 text-xs text-ink-muted">
+              {stars ? `${stars}/5 — tap again to clear` : 'Not rated yet'}
+            </span>
+          </div>
+        </div>
+
+        <div className="text-right">
+          <Button variant="ghost" size="md" onClick={logCooked} disabled={busy}>
+            {busy ? 'Noting…' : '🍳 I cooked this'}
+          </Button>
+          <p className="text-xs text-ink-muted mt-2">
+            {count > 0
+              ? `Cooked ${count} ${count === 1 ? 'time' : 'times'}${
+                  last ? ` · last ${formatRelativeTime(last)}` : ''
+                }`
+              : 'Never cooked'}
+          </p>
+        </div>
+      </div>
+
+      {err && (
+        <p className="mt-3 text-xs text-terracotta">{err}</p>
+      )}
+    </section>
   )
 }
 
@@ -260,7 +366,6 @@ function PersonalNotes({ recipeId, initial }) {
   const [text, setText] = useState(initial)
   const [savedText, setSavedText] = useState(initial)
   const [status, setStatus] = useState('idle') // 'idle' | 'saving' | 'saved' | 'error'
-  const [savedAt, setSavedAt] = useState(null)
   const debounceRef = useRef(null)
   const controllerRef = useRef(null)
   const errorRef = useRef(null)
@@ -273,9 +378,8 @@ function PersonalNotes({ recipeId, initial }) {
     debounceRef.current = setTimeout(async () => {
       controllerRef.current?.abort?.()
       try {
-        const r = await api.put(`/recipes/${recipeId}/note`, { note: text })
+        await api.put(`/recipes/${recipeId}/note`, { note: text })
         setSavedText(text)
-        setSavedAt(r.updated_at)
         setStatus('saved')
         errorRef.current = null
       } catch (e) {
