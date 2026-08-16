@@ -2,8 +2,8 @@ import secrets
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Query, Request, status
+from sqlalchemy import or_, select
 from sqlalchemy.orm import selectinload
 
 from app.deps import CurrentUser, DbSession, SettingsDep
@@ -16,8 +16,10 @@ from app.models.recipe import (
     ShareToken,
     Visibility,
 )
+from app.models.user import User
 from app.schemas.recipe import (
     CreateRecipeOut,
+    DiscoverRecipe,
     NoteIn,
     NoteOut,
     RecipeCreate,
@@ -75,6 +77,78 @@ async def list_mine(user: CurrentUser, db: DbSession) -> list[Recipe]:
         )
     ).scalars().all()
     return list(rows)
+
+
+# NOTE: /public and /saved must be declared before /{recipe_id} — FastAPI
+# matches routes in declaration order, and the parameterised route would
+# otherwise swallow both and fail trying to parse them as a UUID.
+
+
+@router.get("/public", response_model=list[DiscoverRecipe])
+async def list_public(
+    user: CurrentUser,
+    db: DbSession,
+    q: Annotated[str | None, Query(max_length=100)] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 24,
+    offset: Annotated[int, Query(ge=0)] = 0,
+) -> list[DiscoverRecipe]:
+    stmt = (
+        select(Recipe, User.display_name)
+        .join(User, User.id == Recipe.owner_id, isouter=True)
+        .where(Recipe.visibility == Visibility.public)
+    )
+
+    if q:
+        term = f"%{q.strip()}%"
+        stmt = stmt.where(
+            or_(Recipe.title.ilike(term), Recipe.cuisine.ilike(term))
+        )
+
+    stmt = stmt.order_by(Recipe.created_at.desc()).limit(limit).offset(offset)
+    rows = (await db.execute(stmt)).all()
+
+    saved_ids = set(
+        (
+            await db.execute(
+                select(SavedRecipe.recipe_id).where(SavedRecipe.user_id == user.id)
+            )
+        ).scalars().all()
+    )
+
+    out = []
+    for recipe, author in rows:
+        item = DiscoverRecipe.model_validate(recipe)
+        item.author = author
+        item.is_mine = recipe.owner_id == user.id
+        item.saved = recipe.id in saved_ids
+        out.append(item)
+    return out
+
+
+@router.get("/saved", response_model=list[DiscoverRecipe])
+async def list_saved(user: CurrentUser, db: DbSession) -> list[DiscoverRecipe]:
+    rows = (
+        await db.execute(
+            select(Recipe, User.display_name)
+            .join(SavedRecipe, SavedRecipe.recipe_id == Recipe.id)
+            .join(User, User.id == Recipe.owner_id, isouter=True)
+            .where(SavedRecipe.user_id == user.id)
+            .order_by(SavedRecipe.saved_at.desc())
+        )
+    ).all()
+
+    out = []
+    for recipe, author in rows:
+        # A recipe can be un-shared after you saved it; don't keep serving
+        # something the owner has since made private.
+        if recipe.visibility == Visibility.private and recipe.owner_id != user.id:
+            continue
+        item = DiscoverRecipe.model_validate(recipe)
+        item.author = author
+        item.is_mine = recipe.owner_id == user.id
+        item.saved = True
+        out.append(item)
+    return out
 
 
 @router.get("/{recipe_id}", response_model=RecipeOut)
@@ -147,6 +221,22 @@ async def save_recipe(recipe_id: uuid.UUID, user: CurrentUser, db: DbSession) ->
     if existing is not None:
         return
     db.add(SavedRecipe(user_id=user.id, recipe_id=recipe_id))
+    await db.commit()
+
+
+@router.delete("/{recipe_id}/save", status_code=status.HTTP_204_NO_CONTENT)
+async def unsave_recipe(recipe_id: uuid.UUID, user: CurrentUser, db: DbSession) -> None:
+    row = (
+        await db.execute(
+            select(SavedRecipe).where(
+                SavedRecipe.user_id == user.id, SavedRecipe.recipe_id == recipe_id
+            )
+        )
+    ).scalar_one_or_none()
+    # Idempotent: unsaving something you never saved is a no-op, not a 404.
+    if row is None:
+        return
+    await db.delete(row)
     await db.commit()
 
 

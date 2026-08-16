@@ -66,6 +66,14 @@ class RecipeSummary(BaseModel):
     created_at: datetime
 
 
+class DiscoverRecipe(RecipeSummary):
+    """A public recipe as seen from the discover feed."""
+
+    author: str | None = None
+    is_mine: bool = False
+    saved: bool = False
+
+
 class RecipeCreate(BaseModel):
     url: HttpUrl
     visibility: Visibility = Visibility.private

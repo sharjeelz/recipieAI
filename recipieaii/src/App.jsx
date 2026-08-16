@@ -8,6 +8,7 @@ import Register from './routes/Register'
 import AppHome from './routes/AppHome'
 import Library from './routes/Library'
 import Research from './routes/Research'
+import Discover from './routes/Discover'
 import JobStatus from './routes/JobStatus'
 import RecipeView from './routes/RecipeView'
 import CookMode from './routes/CookMode'
@@ -57,6 +58,7 @@ export default function App() {
       >
         <Route index element={<AppHome />} />
         <Route path="research" element={<Research />} />
+        <Route path="discover" element={<Discover />} />
         <Route path="library" element={<Library />} />
         <Route path="shopping-list" element={<ShoppingList />} />
         <Route path="settings" element={<Settings />} />
