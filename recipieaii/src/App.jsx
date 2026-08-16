@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import RequireAuth from './components/RequireAuth'
+import RedirectIfAuthed from './components/RedirectIfAuthed'
 import Landing from './routes/Landing'
 import Login from './routes/Login'
 import Register from './routes/Register'
@@ -19,8 +20,22 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
+      <Route
+        path="/login"
+        element={
+          <RedirectIfAuthed>
+            <Login />
+          </RedirectIfAuthed>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <RedirectIfAuthed>
+            <Register />
+          </RedirectIfAuthed>
+        }
+      />
       <Route path="/s/:token" element={<Share />} />
 
       <Route

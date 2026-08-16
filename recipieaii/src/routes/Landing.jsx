@@ -1,7 +1,18 @@
 import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
+import { useAuth } from '../lib/auth'
 
 export default function Landing() {
+  const { user, loading } = useAuth()
+  // Auth is confirmed asynchronously. Until it resolves we render neither
+  // set of calls-to-action — showing "Sign in" and swapping it a moment
+  // later reads as a glitch, and the slots are sized by their content.
+  const signedIn = !loading && !!user
+  const signedOut = !loading && !user
+  // First name only — "Welcome back, Sharjeel" reads like a person wrote it;
+  // the full display name or an email address does not.
+  const firstName = (user?.display_name || '').trim().split(/\s+/)[0] || null
+
   return (
     <div className="bg-paper text-ink relative overflow-hidden">
       <Helmet>
@@ -22,19 +33,39 @@ export default function Landing() {
             <span className="hidden sm:inline eyebrow-display">est. 2026</span>
           </div>
           <nav className="flex items-center gap-1 sm:gap-2 text-sm">
-            <Link
-              to="/login"
-              className="px-3 py-2 text-ink-soft hover:text-ink link-grow"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/register"
-              className="ml-2 inline-flex items-center gap-2 rounded-full bg-terracotta text-paper-soft px-5 py-2.5 text-sm font-medium hover:bg-terracotta-deep transition-colors shadow-sm"
-              style={{ backgroundColor: '#c2452d', color: '#fbf7f0' }}
-            >
-              Begin <span aria-hidden="true">→</span>
-            </Link>
+            {signedOut && (
+              <>
+                <Link
+                  to="/login"
+                  className="px-3 py-2 text-ink-soft hover:text-ink link-grow"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  to="/register"
+                  className="ml-2 inline-flex items-center gap-2 rounded-full bg-terracotta text-paper-soft px-5 py-2.5 text-sm font-medium hover:bg-terracotta-deep transition-colors shadow-sm"
+                  style={{ backgroundColor: '#c2452d', color: '#fbf7f0' }}
+                >
+                  Begin <span aria-hidden="true">→</span>
+                </Link>
+              </>
+            )}
+            {signedIn && (
+              <>
+                {firstName && (
+                  <span className="hidden sm:inline eyebrow-display text-ink-muted mr-1">
+                    Hello, {firstName}
+                  </span>
+                )}
+                <Link
+                  to="/app"
+                  className="ml-2 inline-flex items-center gap-2 rounded-full bg-terracotta text-paper-soft px-5 py-2.5 text-sm font-medium hover:bg-terracotta-deep transition-colors shadow-sm"
+                  style={{ backgroundColor: '#c2452d', color: '#fbf7f0' }}
+                >
+                  Enter <span aria-hidden="true">→</span>
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -44,7 +75,11 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6 sm:px-10 pt-14 sm:pt-24 pb-16 sm:pb-28">
           {/* meta line */}
           <div className="flex items-center gap-4 mb-12 sm:mb-16 rise">
-            <span className="eyebrow">Volume i · The video issue</span>
+            <span className="eyebrow">
+              {signedIn && firstName
+                ? `Welcome back, ${firstName}`
+                : 'Volume i · The video issue'}
+            </span>
             <span className="flex-1 h-px bg-rule rule-draw" />
             <span className="eyebrow tnum">No. 001</span>
           </div>
@@ -91,26 +126,56 @@ export default function Landing() {
             </div>
 
             <div className="col-span-12 lg:col-span-3 flex flex-col gap-3 rise delay-5">
-              <Link
-                to="/register"
-                className="group inline-flex items-center justify-between gap-4 rounded-full bg-terracotta text-paper-soft px-6 py-4 hover:bg-terracotta-deep transition-colors"
-              >
-                <span className="text-[15px] font-medium tracking-wide">
-                  Open an account
-                </span>
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-paper-soft text-terracotta transition-transform group-hover:translate-x-1">
-                  →
-                </span>
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex items-center justify-between gap-4 rounded-full border border-ink/15 px-6 py-4 hover:border-ink transition-colors"
-              >
-                <span className="text-[15px] font-medium tracking-wide">
-                  I have an account
-                </span>
-                <span className="text-ink-muted">↗</span>
-              </Link>
+              {signedOut && (
+                <>
+                  <Link
+                    to="/register"
+                    className="group inline-flex items-center justify-between gap-4 rounded-full bg-terracotta text-paper-soft px-6 py-4 hover:bg-terracotta-deep transition-colors"
+                  >
+                    <span className="text-[15px] font-medium tracking-wide">
+                      Open an account
+                    </span>
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-paper-soft text-terracotta transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center justify-between gap-4 rounded-full border border-ink/15 px-6 py-4 hover:border-ink transition-colors"
+                  >
+                    <span className="text-[15px] font-medium tracking-wide">
+                      I have an account
+                    </span>
+                    <span className="text-ink-muted">↗</span>
+                  </Link>
+                </>
+              )}
+              {signedIn && (
+                <>
+                  {/* Two actions rather than two labels — a returning cook is
+                      here to add something or to look something up. */}
+                  <Link
+                    to="/app"
+                    className="group inline-flex items-center justify-between gap-4 rounded-full bg-terracotta text-paper-soft px-6 py-4 hover:bg-terracotta-deep transition-colors"
+                  >
+                    <span className="text-[15px] font-medium tracking-wide">
+                      Add a recipe
+                    </span>
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-paper-soft text-terracotta transition-transform group-hover:translate-x-1">
+                      →
+                    </span>
+                  </Link>
+                  <Link
+                    to="/app/library"
+                    className="inline-flex items-center justify-between gap-4 rounded-full border border-ink/15 px-6 py-4 hover:border-ink transition-colors"
+                  >
+                    <span className="text-[15px] font-medium tracking-wide">
+                      Browse your recipes
+                    </span>
+                    <span className="text-ink-muted">↗</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -248,10 +313,12 @@ export default function Landing() {
               A small, careful tool for cooks. © 2026.
             </p>
           </div>
-          <div className="flex items-center gap-6 text-sm text-ink-soft">
-            <Link to="/login" className="link-grow">Sign in</Link>
-            <Link to="/register" className="link-grow">Open account</Link>
-          </div>
+          {signedOut && (
+            <div className="flex items-center gap-6 text-sm text-ink-soft">
+              <Link to="/login" className="link-grow">Sign in</Link>
+              <Link to="/register" className="link-grow">Open account</Link>
+            </div>
+          )}
         </div>
       </footer>
     </div>
