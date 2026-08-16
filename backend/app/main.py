@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
-from app.routers import auth, jobs, recipes, shares, shopping
+from app.routers import auth, jobs, recipes, research, shares, shopping
 from app.services.jobs import ArqJobRunner, InlineJobRunner, JobRunner
 
 settings = get_settings()
@@ -52,5 +52,6 @@ async def health() -> dict[str, str]:
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(recipes.router, prefix="/recipes", tags=["recipes"])
 app.include_router(jobs.router, prefix="/jobs", tags=["jobs"])
+app.include_router(research.router, prefix="/research", tags=["research"])
 app.include_router(shares.router, prefix="/share", tags=["share"])
 app.include_router(shopping.router, prefix="/shopping-list", tags=["shopping"])

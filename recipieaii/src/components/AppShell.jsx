@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 
 const NAV = [
   { to: '/app', end: true, label: 'Home', icon: '⌂' },
+  { to: '/app/research', label: 'Research', icon: '⌕' },
   { to: '/app/library', label: 'Library', icon: '☰' },
   { to: '/app/shopping-list', label: 'Market', icon: '🛒' },
   { to: '/app/settings', label: 'Settings', icon: '⚙' },
@@ -99,7 +100,7 @@ export default function AppShell() {
         className="no-print sm:hidden fixed bottom-0 left-0 right-0 z-40 backdrop-blur-md bg-paper/95 border-t border-rule"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="grid grid-cols-4 max-w-md mx-auto">
+        <div className="grid grid-cols-5 max-w-md mx-auto">
           {NAV.map((item) => (
             <NavLink
               key={item.to}
